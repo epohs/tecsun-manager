@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Tecsun Playlist</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --paper: light-dark(#ffffff, #141414);
+  --ink: light-dark(#141414, #ececec);
+  --muted: light-dark(#6b6b6b, #9b9b9b);
+  --box: light-dark(#141414, #ececec);
+  --box-ink: light-dark(#ffffff, #141414);
+  --gutter: clamp(1rem, 4vw, 3rem);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1rem/1.3 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  padding-block: max(1.5rem, env(safe-area-inset-top)) max(2rem, env(safe-area-inset-bottom));
+  padding-inline: max(var(--gutter), env(safe-area-inset-left)) max(var(--gutter), env(safe-area-inset-right));
+}
+
+/* Two columns cap near 1220 px; three or four in landscape cap at 1440 px */
+main { max-width: 76rem; margin-inline: auto; }
+@media (orientation: landscape) { main { max-width: 90rem; } }
+
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25em 1em; margin-block-end: 1.25em; }
+h1 { margin: 0; font-size: 1.6em; line-height: 1.1; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--muted); font-size: 0.85em; }
+
+ol { margin: 0; padding: 0; list-style: none; columns: 17rem 4; column-gap: 2.5rem; }
+@media (orientation: portrait) { ol { columns: 18rem 2; } }
+
+/* The number box, then the title; a long title wraps under itself, not under the number */
+li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.45em;
+  align-items: first baseline;
+  padding-block-end: 0.55em;
+  break-inside: avoid;
+  text-wrap: pretty;
+}
+.number {
+  background: var(--box);
+  color: var(--box-ink);
+  font-size: 0.92em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 0.08em 0.27em;
+  border-radius: 0.12em;
+}
+.blank { visibility: hidden; }
+.artist { font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Tecsun Playlist</h1>
+    <p>October 31, 2026 · 35 albums</p>
+  </header>
+  <ol>
+    <li><span class="number">01</span><span><span class="artist">Aphex Twin</span>&nbsp;– Drukqs</span></li>
+    <li><span class="number">02</span><span><span class="artist">The Beach Boys</span>&nbsp;– Pet Sounds</span></li>
+    <li><span class="number">03</span><span><span class="artist">The Beatles</span>&nbsp;– Abbey Road</span></li>
+    <li><span class="number">04</span><span><span class="artist">Beck</span>&nbsp;– Mellow Gold</span></li>
+    <li><span class="number">05</span><span><span class="artist">The Books</span>&nbsp;– The Lemon of Pink</span></li>
+    <li><span class="number">06</span><span><span class="artist">John Coltrane</span>&nbsp;– My Favorite Things</span></li>
+    <li><span class="number">07</span><span><span class="artist">Cypress Hill</span>&nbsp;– Cypress Hill</span></li>
+    <li><span class="number">08</span><span><span class="artist">De La Soul</span>&nbsp;– Stakes Is High</span></li>
+    <li><span class="number">09</span><span><span class="artist">Bob Dylan</span>&nbsp;– Blood on the Tracks</span></li>
+    <li><span class="number">10</span><span><span class="artist">Bob Dylan</span>&nbsp;– Highway 61 Revisited</span></li>
+    <li><span class="number">11</span><span><span class="artist">First Aid Kit</span>&nbsp;– The Lion's Roar</span></li>
+    <li><span class="number">12</span><span><span class="artist">Huey Lewis and The News</span>&nbsp;– Sports</span></li>
+    <li><span class="number">13</span><span><span class="artist">Ice Cube</span>&nbsp;– Lethal Injection</span></li>
+    <li><span class="number">14</span><span><span class="artist">Led Zeppelin</span>&nbsp;– III</span></li>
+    <li><span class="number">15</span><span><span class="artist">Led Zeppelin</span>&nbsp;– IV</span></li>
+    <li><span class="number">16</span><span><span class="artist">MF DOOM</span>&nbsp;– Operation Doomsday</span></li>
+    <li><span class="number">17</span><span><span class="artist">MF DOOM</span>&nbsp;– Vaudeville Villain</span></li>
+    <li><span class="number">18</span><span><span class="artist">Modest Mouse</span>&nbsp;– The Lonesome Crowded West</span></li>
+    <li><span class="number">19</span><span><span class="artist">Joanna Newsom</span>&nbsp;– The Milk-Eyed Mender</span></li>
+    <li><span class="number">20</span><span><span class="artist">Nine Inch Nails</span>&nbsp;– The Downward Spiral</span></li>
+    <li><span class="number">21</span><span><span class="artist">Nirvana</span>&nbsp;– Nevermind</span></li>
+    <li><span class="number">22</span><span><span class="artist">Pink Floyd</span>&nbsp;– The Dark Side of the Moon</span></li>
+    <li><span class="number">23</span><span><span class="artist">Pink Floyd</span>&nbsp;– The Wall</span></li>
+    <li><span class="number">24</span><span><span class="artist">Radiohead</span>&nbsp;– OK Computer</span></li>
+    <li><span class="number">25</span><span><span class="artist">Radiohead</span>&nbsp;– The Bends</span></li>
+    <li><span class="number">26</span><span><span class="artist">The Rentals</span>&nbsp;– Return of The Rentals</span></li>
+    <li><span class="number">27</span><span><span class="artist">Rolling Stones</span>&nbsp;– Exile On Main St</span></li>
+    <li><span class="number">28</span><span><span class="artist">Smashing Pumpkins</span>&nbsp;– Mellon Collie and the Infinite Sadness</span></li>
+    <li><span class="number">29</span><span><span class="artist">Snoop Dogg</span>&nbsp;– Doggystyle</span></li>
+    <li><span class="number">30</span><span><span class="artist">A Tribe Called Quest</span>&nbsp;– People's Instinctive Travels and the Paths of Rhythm</span></li>
+    <li><span class="number">31</span><span><span class="artist">A Tribe Called Quest</span>&nbsp;– The Low End Theory</span></li>
+    <li><span class="number">32</span><span><span class="artist">The Velvet Underground &amp; Nico</span>&nbsp;– The Banana Album</span></li>
+    <li><span class="number">33</span><span><span class="artist">Weezer</span>&nbsp;– Blue Album</span></li>
+    <li><span class="number">34</span><span><span class="artist">Wu-Tang Clan</span>&nbsp;– Enter the Wu-Tang (36 Chambers)</span></li>
+    <li><span class="number">35</span><span><span class="artist">Sam Harris</span>&nbsp;– Waking Up</span></li>
+  </ol>
+</main>
+</body>
+</html>
