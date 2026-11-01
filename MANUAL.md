@@ -86,7 +86,8 @@ Some steps need your admin password: fatsort, clearing Spotlight's folder off th
 
 - Lists show the items first, like albums or cards. Below a line are the actions, in their own color: → looks elsewhere, ← goes back.
 - The line above each question says what's being done to what, like "Moving 03 - Morning Edition". Once you've confirmed the card, its name, album count and free space sit at the right of that line.
-- Before most changes, the script asks **Go ahead?**. Its first choice names the change, like "Copy 12 tracks, then clean and sort". When the change deletes albums, or drops files from a kept-current backup, Enter alone goes back. Replace everything also asks you to type the card's name.
+- Before most changes, the script asks if you want to go ahead. The first answer spells out the change, like "Copy 12 tracks, then clean and sort", and the second is Back. When the change deletes albums, or drops files from a kept-current backup, the highlight starts on Back, so pressing Enter right away cancels.
+- Replace everything asks you to type the card's name before it erases the card, so you can't erase the wrong one.
 - After a change, a box titled with the card's name lists what changed and whether the play order checked out.
 - After a task, the menu comes back. Later tasks reuse the confirmed card until it's ejected.
 

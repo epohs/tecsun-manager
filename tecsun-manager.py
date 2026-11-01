@@ -5304,7 +5304,11 @@ def help_topics(state: dict) -> tuple[HelpPage, ...]:
             "The radio plays albums in the order they sit on the card, not by name. The number at the front of each "
             "folder name sets the order you want, and fatsort writes it onto the card after every change.",
             (("Before writing", ("The card is confirmed, then checked again before every write.",
-                                 "Go ahead? names the change. Afterwards, a box lists what changed on the card.",
+                                 ("Before a change, it asks if you want to go ahead. The first answer spells out the "
+                                  "change, and the second is Back. When the change deletes albums or drops files "
+                                  "from a kept-current backup, the highlight starts on Back, so Enter right away "
+                                  "cancels."),
+                                 "After a change, a box lists what changed on the card.",
                                  "Deleting an album asks first and offers a backup.",
                                  "Tracks are copied under a temporary name, then renamed.",
                                  "An e-reader's card is greyed out: cleaning it would delete its reading progress.")),
