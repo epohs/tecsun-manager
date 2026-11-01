@@ -319,12 +319,14 @@ def header() -> None:
 def intro(tools: Tools) -> None:
     """The header, and a tool that's missing, named once a run with what it costs."""
     header()
-    missing = [] if tools.fatsort else [("fatsort", "the card can't be put in play order")]
-    missing += [] if tools.par2 else [("par2", "backups get no repair data")]
-    missing += [] if tools.flac or tools.ffmpeg else [("flac", "damaged tracks can't be found")]
-    for name, cost in missing:
-        if once(f"missing {name}"):
-            warn(f"{name} isn't installed, so {cost}: {install_hint(name)}")
+    missing = [] if tools.fatsort else [(["fatsort"], "the card can't be put in play order")]
+    missing += [] if tools.par2 else [(["par2"], "backups get no repair data")]
+    # Either finds damage, so only both missing is said: flac checks FLAC best, ffmpeg checks every format
+    missing += [] if tools.flac or tools.ffmpeg else [(["flac", "ffmpeg"], "damaged tracks can't be found")]
+    for names, cost in missing:
+        if once(f"missing {names[0]}"):
+            who = " and ".join(names) + (" aren't" if len(names) > 1 else " isn't")
+            warn(f"{who} installed, so {cost}: {install_hint(*names)}")
     say()
 
 
