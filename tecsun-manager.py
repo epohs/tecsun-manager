@@ -3786,7 +3786,7 @@ def check_audio(files: list[Path], tools: Tools) -> AudioReport:
     return report
 
 
-def show_audio_report(report: AudioReport, root: Path) -> None:
+def show_audio_report(report: AudioReport, root: Path, tools: Tools) -> None:
     untested = f", {report.untested:,} untested (no tool for that type, or too slow to finish)" if report.untested else ""
     if report.failed:
         fail(f"{plural(len(report.failed), 'track')} failed: these may skip or glitch")
@@ -3794,6 +3794,8 @@ def show_audio_report(report: AudioReport, root: Path) -> None:
         say(f"[ok]{report.ok:,} passed[/]{untested}")
     else:
         done(f"All {plural(report.ok, 'track')} decode cleanly{untested}")
+    if report.untested and not tools.ffmpeg:  # said here, when it matters, not at every start
+        say(f"[hint]Tracks other than FLAC need ffmpeg to be checked ({install_hint('ffmpeg')}).[/]")
 
 
 
@@ -3957,7 +3959,7 @@ def backup_flow(tools: Tools, state: dict, library: Path, *, card: Card | None =
             say("[hint]Checking the audio first, so a damaged track isn't archived unnoticed.[/]")
             failed_before = RUN.failed, RUN.task_failed
             report = check_audio(files, tools)
-            show_audio_report(report, library)
+            show_audio_report(report, library, tools)
             if report.failed and not ask_confirm("Back up anyway? Damaged tracks are stored as they are.", False):
                 say("[hint]Fix or remove the tracks above, then back up again.[/]")
                 return False
@@ -4472,7 +4474,7 @@ def check_library_audio(tools: Tools, state: dict):
         return
     say(f"[hint]Decoding {plural(len(files), 'track')}. A damaged track shows up as a decoding error.[/]")
     report = check_audio(files, tools)
-    show_audio_report(report, root)
+    show_audio_report(report, root, tools)
     if report.failed:
         say("[hint]Re-rip or replace the tracks above.[/]")
 
