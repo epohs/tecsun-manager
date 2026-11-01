@@ -192,7 +192,8 @@ class Run:
     work: tuple | None = None          # (copied, of) while Add copies tracks, so a stop can say how far it got
     said: set = field(default_factory=set)        # hints already given this run, which needn't come again
     log: Path | None = None            # this run's log, once it's started
-    pages: int = 0                     # pages begun on the terminal's own screen: each after the first is dated
+    pages: int = 0                     # pages begun this run: each after the first is dated
+    clean_pages: bool = False          # Keep scrollback off: each pick from the menu clears the window first
     failed: bool = False              # something went wrong (a red line): the run exits 1
     task_failed: bool = False          # ... in the task under way, so its last line isn't green
 
@@ -292,22 +293,22 @@ def outro(body: str, good: bool = True, to: Console | None = None) -> None:
 
 def page_break() -> None:
     """Above a page's first line, from the second page on: a line across the terminal with the time, so the
-    newest page is easy to find when scrolling back, and matched to the log. On the second screen (Keep
-    scrollback off) pages start on a clean screen instead, so there's nothing to mark."""
-    if console.is_alt_screen:
-        return
-    if RUN.pages:
+    newest page is easy to find when scrolling back, and matched to the log. With Keep scrollback off, pages
+    start on a clean window instead, so there's nothing to mark."""
+    if RUN.pages and not RUN.clean_pages:
         stamp = datetime.now().strftime("%H:%M")
         console.print(Text.assemble(("─" * max(0, console.width - len(stamp) - 4) + " ", "rail"), (stamp, "hint"),
                                     (" ──", "rail")), no_wrap=True, crop=True)
     RUN.pages += 1
 
 
-def second_screen(on: bool) -> None:
-    """Move to or from the terminal's second screen, the one less and vim use. It's the same window: leaving
-    it brings back what the terminal showed before. Only on a change, so the switch is never sent twice."""
-    if console.is_alt_screen != on:
-        console.set_alt_screen(on)
+def clear_screen() -> None:
+    """Empty the window and its scrollback, as `clear` does, for Keep scrollback off. It stays the terminal's
+    own screen, so a page taller than the window still scrolls back to its top, and whatever ends the run
+    stays in view."""
+    if console.is_terminal:
+        console.file.write("\x1b[H\x1b[2J\x1b[3J")  # home, clear the window, clear the scrollback
+        console.file.flush()
 
 
 def header() -> None:
@@ -538,11 +539,6 @@ def setup_question(question, escape, enter=None):
         bindings.add("enter", eager=True)(enter)
     app.key_bindings = merge_key_bindings([app.key_bindings, bindings])
     app.ttimeoutlen = app.timeoutlen = 0.05
-    if console.is_alt_screen and sys.stdin.isatty():
-        # On the second screen many terminals send the mouse wheel as arrow keys. A scroll while nothing was
-        # asked mustn't move this question's highlight before it's drawn, off Back say.
-        with suppress(termios.error, OSError):
-            termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
     return question
 
 
@@ -5383,7 +5379,8 @@ def help_topics(state: dict) -> tuple[HelpPage, ...]:
                         'Type another backups folder at "Save the backup where?" to change it.')),
              ("Settings", ("Debug logging: the menu's Settings turns the log of each run on or off.",
                            ("Keep scrollback: on, everything stays in the terminal, and a line with the time marks "
-                            "each return to the menu after a task. Off, each pick from the menu starts a clean screen."),
+                            "each return to the menu after a task. Off, each pick from the menu clears the window and "
+                            "its scrollback."),
                            ("Audio file types, repair-data percentage, compression level, where backups and "
                             "playlists go, and the printed playlist's type size sit at the top of tecsun-manager.py."))),
              ("Tools", (("fatsort", "play order; the one that matters most"),
@@ -5451,8 +5448,8 @@ def help_menu(state: dict) -> None:
                               esc_hint="Esc closes help")
             if page is BACK:
                 return
-            if console.is_alt_screen:  # Keep scrollback off: each topic, and the topics again, on a clean screen
-                console.clear()
+            if RUN.clean_pages:  # Keep scrollback off: each topic, and the topics again, on a clean window
+                clear_screen()
                 help_header(overview=False)
             show_help_page(page)
             RUN.task = f"Help › {page.title}"
@@ -5460,8 +5457,8 @@ def help_menu(state: dict) -> None:
             if ask_select("Where to?", [action_choice("Back to topics", topics_again, "←"), option("Close help", BACK)],
                           echo=False, on_escape=topics_again) is BACK:
                 return
-            if console.is_alt_screen:
-                console.clear()
+            if RUN.clean_pages:
+                clear_screen()
                 help_header()
     finally:
         RUN.task = ""
@@ -5497,18 +5494,19 @@ def settings_menu(state: dict) -> None:
 
 
 def keep_scrollback(state: dict, keep: bool) -> None:
-    """On: every page stays in the terminal, below a line with its time. Off: the menu moves to the terminal's
-    second screen, where each pick from the menu starts a clean screen. Either way, from now on."""
+    """On: every page stays in the terminal, below a line with its time. Off: each pick from the menu clears the
+    window and its scrollback first. Either way, from now on."""
     LOG.info("Keep scrollback turned %s in Settings", "on" if keep else "off")
     saved = save_state(state, keep_scrollback=keep)
-    second_screen(not keep)
+    RUN.clean_pages = not keep
+    if not keep:
+        clear_screen()
     header()
     say()
     if keep:
         done("Keep scrollback is on: earlier pages stay above, each below a line with its time.")
     else:
-        done("Keep scrollback is off: each task starts on a clean screen, and Quit brings back what the terminal "
-             "showed before.")
+        done("Keep scrollback is off: each pick from the menu clears the window, so only that task is there.")
     if not saved:
         warn(f"That couldn't be saved in {esc(tilde(STATE_FILE))}, so it's {'on' if keep else 'off'} for this run "
              "only.")
@@ -5593,15 +5591,11 @@ def run_task(name: str, tools: Tools, state: dict):
 
 
 def clean_page(picked) -> None:
-    """Keep scrollback off: each pick from the menu starts a clean screen, so a task's result stays in view
-    until the next pick. Quit leaves the second screen instead: the terminal gets back what it showed before,
-    and the last page, with any card cleaned on the way out, stays once the script ends."""
-    if not console.is_alt_screen:
+    """Keep scrollback off: each pick from the menu clears the window and its scrollback, so a task's result
+    stays in view until the next pick. Quit doesn't, so the last result stays once the script ends."""
+    if not RUN.clean_pages or picked is QUIT:
         return
-    if picked is QUIT:
-        second_screen(False)
-    else:
-        console.clear()
+    clear_screen()
     header()
     say()
 
@@ -5727,12 +5721,9 @@ def main(argv: list[str] | None = None) -> int:
                 say()
                 before_quitting(tools, state)
         else:
-            second_screen(not state.get("keep_scrollback", True))
-            try:
-                intro(tools)
-                menu(tools, state)
-            finally:  # however the run ends, its last words go on the terminal's own screen, where they stay
-                second_screen(False)
+            RUN.clean_pages = not state.get("keep_scrollback", True)
+            intro(tools)
+            menu(tools, state)
         return 1 if RUN.failed else 0
     except (KeyboardInterrupt, EOFError) as stop:  # EOFError: Ctrl-D in an empty field
         errors.print()

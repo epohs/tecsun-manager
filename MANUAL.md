@@ -229,14 +229,11 @@ Each run writes a log of what it showed, what it asked and your answers, every c
 
 ### Keep scrollback
 
-Everything the script shows stays in the terminal, so you can scroll back through the whole session. Each time the menu comes back after a task finishes, and each time Help opens, a line with the time marks the spot. The time matches the log's.
+With Keep scrollback on, the default, everything the script shows stays in the terminal, so you can scroll back through the whole session. Each time the menu comes back after a task finishes, and each time Help opens, a line with the time marks the spot. The time matches the log's.
 
-With Keep scrollback off, the menu runs on the terminal's second screen, the one `less` and `vim` use. It's the same window, not a new one. Each pick from the menu starts a clean screen, so a task's result stays in view until you pick the next thing. Quit brings back what the terminal showed before, then adds a short closing page that stays.
+With Keep scrollback off, each pick from the menu clears the terminal window and its scrollback, so only the task you picked is there. Its result stays on screen until your next pick, and you can still scroll up through a long page. Quit doesn't clear, so the last result stays after the script ends.
 
-- A page taller than the window loses its top, since that screen has no scrollback.
-- Keys pressed while a task runs are dropped. Many terminals turn the mouse wheel into arrow keys on that screen, and a scroll shouldn't move the next question's highlight.
-- A run that's stopped partway shows only how it stopped. What led up to it is in the log.
-- If the script is killed outright, with `kill -9`, the terminal can stay on that screen. Type `reset` to fix it.
+- The first clear also removes whatever was in the terminal window before you started the script.
 - A task run from the command line, like `--add`, always keeps its output.
 
 
