@@ -8,4 +8,4 @@
 | ![Cleaning the card](clean.png) | **Cleaning the card.** The script removes the hidden files macOS left on the card, and rewrites any tracks that were stored in pieces so each is whole again |
 | ![Stats](stats.png) | **Stats.** The SD card at a glance |
 
-My radio is the PL-990x, a near-identical version of the PL-990, so that's the name you'll see in them.
+My radio is the PL-990x, a near-identical version of the PL-990, so that's the name you'll see in the screenshots.
