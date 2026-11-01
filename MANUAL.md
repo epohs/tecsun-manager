@@ -223,8 +223,8 @@ The menu's **Settings** has two settings, both on by default.
 
 Each run writes a log of what it showed, what it asked and your answers, every command it ran, and every change to the card. When a run stops or crashes, its last lines name the log. Your password never ends up in it.
 
-- All the logs together stay around 5 MB. Each time the script starts, it deletes the oldest to make room.
-- In a huge run, like checking thousands of tracks, it stops logging each file once the log passes 1 MB, but still logs everything else.
+- Each run writes its own log file. When the script starts, it deletes the oldest log files, a whole run at a time, so all the logs together stay around 5 MB.
+- If one run's log grows past 1 MB, as when checking thousands of tracks, it stops noting each file one by one. It still notes everything else: what the script showed, what you answered, and what changed.
 - Turning logging off stops the current log right away and offers to delete the old ones.
 
 ### Keep scrollback
