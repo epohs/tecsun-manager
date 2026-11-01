@@ -1,6 +1,6 @@
 # tecsun-manager manual
 
-[Synopsis](#synopsis) · [Requirements](#requirements) · [Linux](#linux) · [Options](#options) · [Files](#files) · [Getting around](#getting-around) · [Tasks](#tasks) · [Settings](#settings) · [Safety](#safety) · [Exit status](#exit-status) · [Uninstall](#uninstall)
+[Synopsis](#synopsis) · [Requirements](#requirements) · [Linux](#linux) · [Options](#options) · [Getting around](#getting-around) · [Tasks](#tasks) · [Settings](#settings) · [Files](#files) · [Safety](#safety) · [Exit status](#exit-status) · [Uninstall](#uninstall)
 
 
 ## Synopsis
@@ -51,19 +51,6 @@ Use one option at a time. They can't be shortened, so `--clean` works but `--cl`
 | `-V`, `--version` | Prints the version |
 
 A mistyped option gets a suggestion, like "Did you mean --check?".
-
-
-## Files
-
-| Where | What |
-|---|---|
-| `~/.config/tecsun-manager/state.json` | What the script remembers: the last folders, card and backup, when each card's albums last changed and were last backed up, your backups folder, and your [Settings](#settings). Delete it to forget them, and both settings go back on. Uses `$XDG_CONFIG_HOME` instead of `~/.config` when that's set |
-| `~/.config/tecsun-manager/logs/` | A log of each run, beside `state.json`. See [Settings](#settings) |
-| `tecsun-backups/` | Where backups go: next to the script, unless you pick another folder |
-| `~/Desktop/Tecsun Restored/` | Where [Restore](#restore) suggests unpacking, until you pick another folder |
-| `tecsun-playlist.epub`, `.pdf`, `.html` | Where [Generate playlist](#generate-playlist) saves its files: next to the script |
-
-A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio file types, how much repair data backups get, the compression level, where backups and playlists go, and the printed playlist's type size.
 
 
 ## Getting around
@@ -251,6 +238,19 @@ With Keep scrollback off, the menu runs on the terminal's second screen, the one
 - A run that's stopped partway shows only how it stopped. What led up to it is in the log.
 - If the script is killed outright, with `kill -9`, the terminal can stay on that screen. Type `reset` to fix it.
 - A task run from the command line, like `--add`, always keeps its output.
+
+
+## Files
+
+| Where | What |
+|---|---|
+| `~/.config/tecsun-manager/state.json` | What the script remembers: the last folders, card and backup, when each card's albums last changed and were last backed up, your backups folder, and your [Settings](#settings). Delete it to forget them, and both settings go back on. Uses `$XDG_CONFIG_HOME` instead of `~/.config` when that's set |
+| `~/.config/tecsun-manager/logs/` | A log of each run, beside `state.json`. See [Settings](#settings) |
+| `tecsun-backups/` | Where backups go: next to the script, unless you pick another folder |
+| `~/Desktop/Tecsun Restored/` | Where [Restore](#restore) suggests unpacking, until you pick another folder |
+| `tecsun-playlist.epub`, `.pdf`, `.html` | Where [Generate playlist](#generate-playlist) saves its files: next to the script |
+
+A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio file types, how much repair data backups get, the compression level, where backups and playlists go, and the printed playlist's type size.
 
 
 ## Safety
