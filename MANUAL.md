@@ -57,7 +57,7 @@ A mistyped option gets a suggestion, like "Did you mean --check?".
 
 | Where | What |
 |---|---|
-| `~/.config/tecsun-manager/state.json` | What the script remembers: the last folders and card, when each card's albums last changed and were last backed up, your backups folder, and whether Debug logging is on. Delete it to forget them, and logging goes back on. Uses `$XDG_CONFIG_HOME` instead of `~/.config` when that's set |
+| `~/.config/tecsun-manager/state.json` | What the script remembers: the last folders and card, when each card's albums last changed and were last backed up, your backups folder, and your [Settings](#settings). Delete it to forget them, and both settings go back on. Uses `$XDG_CONFIG_HOME` instead of `~/.config` when that's set |
 | `~/.config/tecsun-manager/logs/` | A log of each run. See [Settings](#settings) |
 | `tecsun-backups/` | Where backups go: next to the script, unless you pick another folder |
 | `tecsun-playlist.epub`, `.pdf`, `.html` | Where [Generate playlist](#generate-playlist) saves its files: next to the script |
@@ -82,6 +82,7 @@ A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio f
 - Replace everything asks you to type the card's name before it erases the card, so you can't erase the wrong one.
 - After a change, a box titled with the card's name lists what changed and whether the play order checked out.
 - After a task, the menu comes back. Later tasks reuse the confirmed card until it's ejected.
+- Each time the menu comes back after a task, and each time Help opens, a line with the time marks the spot, so the newest is easy to find when you scroll back. To start each task on a clean screen instead, turn off [Keep scrollback](#keep-scrollback).
 
 ### The menu
 
@@ -227,13 +228,27 @@ Add and Arrange offer a backup when they finish: an update of the card's kept-cu
 
 ## Settings
 
-The menu's **Settings** has one setting: **Debug logging**, on by default.
+The menu's **Settings** has two settings, both on by default.
+
+### Debug logging
 
 Each run writes a log of what it showed, what it asked and your answers, every command it ran, and every change to the card. When a run stops or crashes, its last lines name the log. Your password never ends up in it.
 
 - All the logs together stay under 5 MB. When they'd pass that, the oldest are deleted first.
 - In a huge run, like checking thousands of tracks, it stops logging each file once the log passes 1 MB, but still logs everything else.
 - Turning logging off stops the current log right away and offers to delete the old ones.
+
+### Keep scrollback
+
+Everything the script shows stays in the terminal, so you can scroll back through the whole session. Each time the menu comes back after a task, and each time Help opens, a line with the time marks the spot. The time matches the log's.
+
+With Keep scrollback off, the menu runs on the terminal's second screen, the one `less` and `vim` use. It's the same window, not a new one. Each pick from the menu starts a clean screen, so a task's result stays in view until you pick the next thing. Quit brings back what the terminal showed before, and the last page stays.
+
+- A page taller than the window loses its top, since that screen has no scrollback.
+- Keys pressed while a task runs are dropped. Many terminals turn the mouse wheel into arrow keys on that screen, and a scroll shouldn't move the next question's highlight.
+- A run that's stopped partway shows only how it stopped. What led up to it is in the log.
+- If the script is killed outright, with `kill -9`, the terminal can stay on that screen. Type `reset` to fix it.
+- A task run from the command line, like `--add`, always keeps its output.
 
 
 ## Safety

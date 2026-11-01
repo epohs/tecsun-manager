@@ -192,7 +192,8 @@ class Run:
     work: tuple | None = None          # (copied, of) while Add copies tracks, so a stop can say how far it got
     said: set = field(default_factory=set)        # hints already given this run, which needn't come again
     log: Path | None = None            # this run's log, once it's started
-    failed: bool = False               # something went wrong (a red line): the run exits 1
+    pages: int = 0                     # pages begun on the terminal's own screen: each after the first is dated
+    failed: bool = False              # something went wrong (a red line): the run exits 1
     task_failed: bool = False          # ... in the task under way, so its last line isn't green
 
     def reset(self) -> None:
@@ -289,9 +290,35 @@ def outro(body: str, good: bool = True, to: Console | None = None) -> None:
     _line("└", "rail", f"[{'ok' if good and not RUN.task_failed else 'warn'}]{body}[/]", to)
 
 
-def intro(tools: Tools) -> None:
-    """The header: the name and what it's for. A tool that's missing is named once a run, with what it costs."""
+def page_break() -> None:
+    """Above a page's first line, from the second page on: a line across the terminal with the time, so the
+    newest page is easy to find when scrolling back, and matched to the log. On the second screen (Keep
+    scrollback off) pages start on a clean screen instead, so there's nothing to mark."""
+    if console.is_alt_screen:
+        return
+    if RUN.pages:
+        stamp = datetime.now().strftime("%H:%M")
+        console.print(Text.assemble(("─" * max(0, console.width - len(stamp) - 4) + " ", "rail"), (stamp, "hint"),
+                                    (" ──", "rail")), no_wrap=True, crop=True)
+    RUN.pages += 1
+
+
+def second_screen(on: bool) -> None:
+    """Move to or from the terminal's second screen, the one less and vim use. It's the same window: leaving
+    it brings back what the terminal showed before. Only on a change, so the switch is never sent twice."""
+    if console.is_alt_screen != on:
+        console.set_alt_screen(on)
+
+
+def header() -> None:
+    """A page's first line: the name and what it's for."""
+    page_break()
     console.print(Text.assemble(("┌", "rail"), "  ", ("Tecsun Manager", "bold"), ("  ·  ", "rail"), PURPOSE))
+
+
+def intro(tools: Tools) -> None:
+    """The header, and a tool that's missing, named once a run with what it costs."""
+    header()
     missing = [] if tools.fatsort else [("fatsort", "the card can't be put in play order")]
     missing += [] if tools.par2 else [("par2", "backups get no repair data")]
     missing += [] if tools.flac or tools.ffmpeg else [("flac", "damaged tracks can't be found")]
@@ -506,13 +533,18 @@ def setup_question(question, escape, enter=None):
         bindings.add("enter", eager=True)(enter)
     app.key_bindings = merge_key_bindings([app.key_bindings, bindings])
     app.ttimeoutlen = app.timeoutlen = 0.05
+    if console.is_alt_screen and sys.stdin.isatty():
+        # On the second screen many terminals send the mouse wheel as arrow keys. A scroll while nothing was
+        # asked mustn't move this question's highlight before it's drawn, off Back say.
+        with suppress(termios.error, OSError):
+            termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
     return question
 
 
 def ask_select(message: str, choices: list[Choice], default=None, *, search: bool = False, echo: bool = True,
-               on_escape=BACK, esc_hint: str = "Esc goes back"):
+               on_escape=BACK, esc_hint: str = "Esc goes back", on_pick=None):
     """Pick one. Esc picks the choice whose value is `on_escape`, the Back choice unless said otherwise;
-    with a filter typed, Esc clears the filter first."""
+    with a filter typed, Esc clears the filter first. `on_pick` gets the answer before it's echoed."""
     leaves = any(c.value is on_escape for c in choices)
     hints = (["type to filter"] if search else []) + ([esc_hint] if leaves and esc_hint else [])
     for choice in choices:  # typed accents are composed; macOS lists names on the card decomposed
@@ -551,6 +583,8 @@ def ask_select(message: str, choices: list[Choice], default=None, *, search: boo
     picked = next(c for c in choices if c.value is value)  # by identity: 0 == False would match the wrong one
     label = getattr(picked.title, "label", None) or (picked.title[0][1] if isinstance(picked.title, list)
                                                      else picked.title)
+    if on_pick:
+        on_pick(value)
     if echo:
         _answered(message, label.strip())
     else:
@@ -814,7 +848,7 @@ class SafetyError(Exception):
 # ── Remembered paths ──────────────────────────────────────────────────────────
 
 STATE_TYPES = {"library": str, "card_uuid": str, "backup_dir": str, "last_archive": str, "restore_dir": str,
-               "cards": dict, "debug_log": bool}
+               "cards": dict, "debug_log": bool, "keep_scrollback": bool}
 
 
 def load_state() -> dict:
@@ -5328,6 +5362,8 @@ def help_topics(state: dict) -> tuple[HelpPage, ...]:
                         (tilde(backups_from(state)), backups_note(state)),
                         'Type another backups folder at "Save the backup where?" to change it.')),
              ("Settings", ("Debug logging: the menu's Settings turns the log of each run on or off.",
+                           ("Keep scrollback: on, everything stays in the terminal, and a line with the time marks "
+                            "each return to the menu. Off, each pick from the menu starts a clean screen."),
                            ("Audio file types, fatsort flags, repair-data percentage, compression level and the "
                             "printed playlist's type size sit at the top of tecsun-manager.py."))),
              ("Tools", (("fatsort", "play order; the one that matters most"),
@@ -5336,13 +5372,15 @@ def help_topics(state: dict) -> tuple[HelpPage, ...]:
     )
 
 
-def help_header() -> None:
+def help_header(overview: bool = True) -> None:
+    page_break()
     head = Text.assemble(("┌", "rail"), "  ", ("Tecsun Manager", "bold"), (" · Help", "accent"))
     version = Text(f"v{VERSION}", style="version")
     console.print(head + Text(" " * max(2, min(console.width, 80) - head.cell_len - version.cell_len)) + version)
-    say(TAGLINE)
-    say()
-    say(ABOUT)
+    if overview:
+        say(TAGLINE)
+        say()
+        say(ABOUT)
     say()
 
 
@@ -5393,35 +5431,68 @@ def help_menu(state: dict) -> None:
                               esc_hint="Esc closes help")
             if page is BACK:
                 return
+            if console.is_alt_screen:  # Keep scrollback off: each topic, and the topics again, on a clean screen
+                console.clear()
+                help_header(overview=False)
             show_help_page(page)
             RUN.task = f"Help › {page.title}"
             topics_again = object()
             if ask_select("Where to?", [action_choice("Back to topics", topics_again, "←"), option("Close help", BACK)],
                           echo=False, on_escape=topics_again) is BACK:
                 return
+            if console.is_alt_screen:
+                console.clear()
+                help_header()
     finally:
         RUN.task = ""
 
 
 def settings_menu(state: dict) -> None:
-    """Settings, from the menu. One so far: whether each run is logged."""
+    """Settings, from the menu: whether each run is logged, and whether earlier pages stay in scrollback."""
     RUN.task = "Settings"
+    picked = None
     try:
         while True:
             on = state.get("debug_log", True)
+            keep = state.get("keep_scrollback", True)
             logs = saved_logs()
             hint = (f"{plural(len(logs), 'log')} kept, {human(sum(log_size(log) for log in logs))}" if on and logs
                     else "a log of each run, for working out what went wrong")
             picked = ask_select("Which setting?", [
                 option(f"Debug logging: [{'on' if on else 'off'}]", "debug_log", hint, width=22),
+                option(f"Keep scrollback: [{'on' if keep else 'off'}]", "keep_scrollback",
+                       "earlier pages stay above, to scroll back to" if keep else "each task starts on a clean screen",
+                       width=22),
                 divider(),
                 back(),
-            ], echo=False)
+            ], default=picked, echo=False)
             if picked is BACK:
                 return
-            (logging_off if on else logging_on)(state)
+            if picked == "keep_scrollback":
+                keep_scrollback(state, not keep)
+            else:
+                (logging_off if on else logging_on)(state)
     finally:
         RUN.task = ""
+
+
+def keep_scrollback(state: dict, keep: bool) -> None:
+    """On: every page stays in the terminal, below a line with its time. Off: the menu moves to the terminal's
+    second screen, where each pick from the menu starts a clean screen. Either way, from now on."""
+    LOG.info("Keep scrollback turned %s in Settings", "on" if keep else "off")
+    saved = save_state(state, keep_scrollback=keep)
+    second_screen(not keep)
+    header()
+    say()
+    if keep:
+        done("Keep scrollback is on: earlier pages stay above, each below a line with its time.")
+    else:
+        done("Keep scrollback is off: each task starts on a clean screen, and Quit brings back what the terminal "
+             "showed before.")
+    if not saved:
+        warn(f"That couldn't be saved in {esc(tilde(STATE_FILE))}, so it's {'on' if keep else 'off'} for this run "
+             "only.")
+    say()
 
 
 def log_size(log: Path) -> int:
@@ -5501,6 +5572,20 @@ def run_task(name: str, tools: Tools, state: dict):
         RUN.task = ""
 
 
+def clean_page(picked) -> None:
+    """Keep scrollback off: each pick from the menu starts a clean screen, so a task's result stays in view
+    until the next pick. Quit leaves the second screen instead: the terminal gets back what it showed before,
+    and the last page, with any card cleaned on the way out, stays once the script ends."""
+    if not console.is_alt_screen:
+        return
+    if picked is QUIT:
+        second_screen(False)
+    else:
+        console.clear()
+    header()
+    say()
+
+
 def menu(tools: Tools, state: dict) -> None:
     """The menu, until Quit: a task that finishes, or is backed out of, comes back to it. Above it, any card
     plugged in that changed since its last backup is named. A card a task left mounted gets an item of its own,
@@ -5516,9 +5601,9 @@ def menu(tools: Tools, state: dict) -> None:
             *(action_choice(f"Clean and eject {card.name}", card, "⏏", style="warn",
                             hint="still mounted; ready it for the radio") for card in cards_left_mounted()),
             option("Help", "help", "what each task does", width=19),
-            option("Settings", "settings", "debug logging", width=19),
+            option("Settings", "settings", "logging, scrollback", width=19),
             option("Quit", QUIT, width=19),
-        ], on_escape=QUIT, esc_hint="")
+        ], on_escape=QUIT, esc_hint="", on_pick=clean_page)
         if picked is QUIT:
             if not before_quitting(tools, state):
                 outro("Bye.")
@@ -5608,20 +5693,26 @@ def main(argv: list[str] | None = None) -> int:
     else:
         stop_log()
     tools = Tools.detect()
-    intro(tools)
     for sig in (signal.SIGTERM, signal.SIGHUP):  # stop as Ctrl-C does, so the cleanup on the way out runs
         signal.signal(sig, stop_on_signal)
     try:
-        if action:
+        if action:  # a task from the command line is one page, so it always stays in scrollback
+            intro(tools)
             if run_task(action, tools, state) is BACK:
                 outro("Nothing changed.")
             if cards_waiting():  # the task's block is closed: the question gets one of its own
                 console.print()
+                page_break()
                 console.print(Text.assemble(("┌", "rail"), "  ", ("Before quitting", "bold")))
                 say()
                 before_quitting(tools, state)
         else:
-            menu(tools, state)
+            second_screen(not state.get("keep_scrollback", True))
+            try:
+                intro(tools)
+                menu(tools, state)
+            finally:  # however the run ends, its last words go on the terminal's own screen, where they stay
+                second_screen(False)
         return 1 if RUN.failed else 0
     except (KeyboardInterrupt, EOFError) as stop:  # EOFError: Ctrl-D in an empty field
         errors.print()
