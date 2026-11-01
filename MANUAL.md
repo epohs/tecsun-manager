@@ -30,7 +30,7 @@ Some steps need your admin password: fatsort, clearing Spotlight's folder off th
 
 ## Linux
 
-The same script runs on Linux with `lsblk`, and ideally `udisks2`. Without udisks2, unmounting the card takes your password, and **Keep it mounted** can't mount the card again. exFAT cards need fatsort 1.7 or newer. Debian 13 and Ubuntu ship 1.6, which can't read exFAT, so build 1.7 from [fatsort.sourceforge.io](https://fatsort.sourceforge.io). FAT32 cards are fine with 1.6. Linux can't check for [tracks stored in pieces](#tracks-stored-in-pieces).
+The same script runs on Linux with `lsblk`, and ideally `udisks2`. Without udisks2, unmounting the card takes your password, and an unmounted card can't be mounted again, so the script ejects it instead of offering **Keep it mounted**. exFAT cards need fatsort 1.7 or newer. Debian 13 and Ubuntu ship 1.6, which can't read exFAT, so build 1.7 from [fatsort.sourceforge.io](https://fatsort.sourceforge.io). FAT32 cards are fine with 1.6. Linux can't check for [tracks stored in pieces](#tracks-stored-in-pieces).
 
 
 ## Options

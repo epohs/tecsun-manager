@@ -2150,10 +2150,15 @@ def unmount_card(card: Card, sudo: list[str]) -> bool:
     return run([*sudo, "umount", str(card.mount)]).returncode == 0
 
 
+def can_mount() -> bool:
+    """Whether an unmounted card can be mounted again from here: diskutil on macOS, udisks2 on Linux."""
+    return IS_MAC or bool(shutil.which("udisksctl"))
+
+
 def mount_card(card: Card) -> bool:
     if IS_MAC:
         return run(["diskutil", "mount", card.device]).returncode == 0
-    if not shutil.which("udisksctl"):
+    if not can_mount():
         return False
     return run(["udisksctl", "mount", "--no-user-interaction", "-b", card.device]).returncode == 0
 
@@ -3003,7 +3008,8 @@ def finish_card(card: Card, tools: Tools, state: dict, *, offer_backup: bool, ej
     still = (f"{plural(in_pieces, 'track')} still in pieces, which the radio may skip. See above."
              if in_pieces else "")
 
-    if not eject_now and RUN.in_menu and keep_mounted():
+    # Keep it mounted only when it can be: on Linux without udisks2, an unmounted card can't be mounted again
+    if not eject_now and RUN.in_menu and (os.path.ismount(card.mount) or can_mount()) and keep_mounted():
         if os.path.ismount(card.mount) or mount_card(card):
             card = find_card(card.device, card.uuid) or card
             RUN.used[card_key(card)] = card
@@ -4552,8 +4558,10 @@ def check_card_order(tools: Tools, state: dict):
               good=not (problems or in_pieces))
         return
     eject, mount = object(), object()
-    after = ask_select("Then", [option("Eject", eject, "ready to pull"), option("Mount it again", mount)],
-                       on_escape=mount, esc_hint="")
+    after = eject
+    if can_mount():  # without udisks2 it couldn't be mounted again, so it's simply ejected
+        after = ask_select("Then", [option("Eject", eject, "ready to pull"), option("Mount it again", mount)],
+                           on_escape=mount, esc_hint="")
     if after is mount:
         if mount_card(card):
             outro("Mounted again.")
