@@ -2627,7 +2627,7 @@ def preview_add(card: Card, contents: CardContents, albums: list[Album], source:
     go = (f"Erase the card, then copy {plural(len(albums), 'album')}" if replace_all
           else f"Copy {plural(len(plan.jobs), 'track')}, then clean and sort" if plan.jobs
           else "Rename, then clean and sort")
-    if ask_go(go) is BACK:
+    if ask_go(go, safe=replace_all) is BACK:  # erasing drops every album: Enter alone goes back
         outro("Nothing was copied.", good=False)
         return False
     return True
