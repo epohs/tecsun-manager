@@ -223,7 +223,7 @@ The menu's **Settings** has two settings, both on by default.
 
 Each run writes a log of what it showed, what it asked and your answers, every command it ran, and every change to the card. When a run stops or crashes, its last lines name the log. Your password never ends up in it.
 
-- Each run writes its own log file. When the script starts, it deletes the oldest log files, a whole run at a time, so all the logs together stay around 5 MB.
+- Each run writes its own log file. When the script starts, it deletes the oldest log files, a whole run at a time, so that all the logs together stay around 5 MB.
 - If one run's log grows past 1 MB, as when checking thousands of tracks, it stops noting each file one by one. It still notes everything else: what the script showed, what you answered, and what changed.
 - Turning logging off stops the current log right away and offers to delete the old ones.
 
@@ -252,7 +252,8 @@ A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio f
 
 ## Safety
 
-- Before a task changes the card, the script shows what's on it and asks if it's the right one. A card confirmed earlier in the run, the yellow **Clean and eject** item, and the offers to clean after Back up, Find damaged tracks or at Quit name the card instead. Before every write, it checks by the card's ID that the same card is still there. A swapped card stops the run.
+- Before a task changes the card, the script shows what's on it and asks if it's the right one. It skips that question only when it already knows which card you mean, and names the card instead. That happens when you confirmed the card earlier in the run, when you pick the yellow **Clean and eject** item, and when it offers to clean the card after Back up, after Find damaged tracks, or at Quit.
+- Before every write, the script checks the card's ID to make sure the same card is still there. A swapped card stops the run.
 - In a filtered list, Enter does nothing until the filter matches, so a typo can't pick the first album.
 - Tracks copy under a temporary name and are flushed to the card before they get their real name, so a cut-short copy never leaves half a track.
 - If you press Ctrl-C, or the run gets a `kill`, while fatsort, a batch of renames or deletes, or a reformat is changing the card, the script waits for that to finish first. fatsort itself is never interrupted.
