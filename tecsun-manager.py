@@ -5328,7 +5328,7 @@ def logs_note(state: dict) -> str:
     if not state.get("debug_log", True):
         return "a log of each run, when Debug logging is on in Settings; it's off"
     return (f"a log of each run: what it showed, asked and ran, for working out what went wrong. "
-            f"About {human(LOGS_SPACE)} in all, the oldest deleted as each run starts; Settings turns it off")
+            f"About {human(LOGS_SPACE)} in all, the oldest logs deleted as each run starts; Settings turns it off")
 
 
 def help_topics(state: dict) -> tuple[HelpPage, ...]:
@@ -5370,8 +5370,8 @@ def help_topics(state: dict) -> tuple[HelpPage, ...]:
                           "out."))))),
         HelpPage(
             "Files and settings", "what it remembers, and the tools it uses",
-            "It remembers the last folders and card, when each card's albums last changed and when it was backed "
-            "up, and where backups go.",
+            "It remembers the last folders, card and backup, when each card's albums last changed and when it was "
+            "backed up, and where backups go.",
             (("Files", ((tilde(STATE_FILE), ("all of that, a backups folder you picked, and your settings; delete it "
                                              "to forget them")),
                         (tilde(logs_folder()), logs_note(state)),

@@ -41,7 +41,7 @@ cd tecsun-manager
 ./tecsun-manager.py
 ```
 
-The first run fetches Python 3.14 and everything else it needs. par2, flac and ffmpeg are optional: par2 adds repair data to backups, and flac or ffmpeg checks tracks for damage. The script tells you what's missing.
+The first run fetches Python 3.14 or newer and everything else it needs. par2, flac and ffmpeg are optional: par2 adds repair data to backups, and flac or ffmpeg checks tracks for damage. The script tells you what's missing.
 
 To run it from anywhere as `tecsun-manager`:
 

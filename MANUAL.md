@@ -91,7 +91,7 @@ Some cards are greyed out and can't be picked: a locked card, a card that isn't 
 
 ### Keeping the card mounted
 
-From the menu, every task that cleans the card ends by asking **Eject** or **Keep it mounted**. A kept card is sorted, then mounted again for the next task.
+From the menu, every task that cleans the card ends by asking **Eject** or **Keep it mounted**. On Linux, that needs udisks2 (see [Linux](#linux)). A kept card is sorted, then mounted again for the next task.
 
 While a card is still mounted, the menu shows a yellow **Clean and eject** item for it. When you quit, the script lists any card you used that's still mounted, says what could trip the radio up, and offers to clean and eject it. A task run from the command line asks the same at the end. A run that's stopped (Ctrl-C, a `kill`, a crash) names each card that still needs cleaning.
 
@@ -127,7 +127,7 @@ Nothing changes until you apply. **Cancel** asks before it throws your changes a
 `--clean` · Run this whenever the card has been plugged into a Mac, before it goes back in the radio.
 
 - Removes every hidden item at the top of the card (any name that starts with a dot, like `.fseventsd` and `.Spotlight-V100`), and `._`, `.DS_Store` and `.apdisk` files and leftover partial copies anywhere. The radio can mistake them for albums. Don't keep files of your own on the card under names that start with a dot.
-- Finds tracks stored in pieces, and offers to rewrite each one whole.
+- Finds tracks stored in pieces and, on a FAT32 card, offers to rewrite each one whole.
 - Sorts the card with fatsort, reads the order back to check it, and ejects.
 
 #### Tracks stored in pieces
