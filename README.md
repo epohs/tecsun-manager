@@ -9,7 +9,7 @@ Keeps the SD card in a Tecsun PL-990 radio tidy, in the right play order, and ba
 
 The PL-990 plays albums from a microSD card, but it's fussy about it:
 
-- It plays albums in the order they were written to the card, not by name. Add or rename an album and the order goes sideways.
+- It plays albums in the order they sit on the card, not by name. Add or rename an album and the order goes sideways.
 - macOS leaves hidden files on any card you plug in, and the radio can list them as albums.
 - When a track ends up stored in scattered pieces on the card, the radio lists it, then skips it.
 
@@ -20,8 +20,8 @@ I fill my card and then barely touch it for years. By the time I want to change 
 
 - **Add albums**: copies new albums onto the card, each at the spot its number says, and renumbers the rest.
 - **Arrange albums**: moves, renames or deletes albums, then renumbers the rest to stay accurate.
-- **Clean the card**: clears out macOS's hidden files, fixes tracks stored in pieces, sorts the card and ejects it.
-- **Back up**: saves the whole card as one archive with checksums and repair data, then reads it back to check every file.
+- **Clean the card**: clears out macOS's hidden files, finds tracks stored in pieces and offers to fix them, sorts the card and ejects it.
+- **Back up**: saves the whole card as one archive with checksums, reads it back to check every file, then adds repair data.
 - **Restore**: unpacks a backup and checks every file.
 - **Check**: verifies a backup, finds damaged tracks, or reads the card's play order.
 - **Stats**: shows what's on the card and how full it is.

@@ -13,24 +13,24 @@ tecsun-manager --help | --version
 
 With no options, the script opens a menu and asks questions as it goes. A task option skips the menu and runs just that task. Either way it's interactive, so it needs a terminal. It takes no paths: each task asks for its card or folder.
 
-Albums are folders at the top of the card, named `NN - Artist - Album`. The number sets the order the radio plays them in. The radio actually plays them in the order they sit on the card, so after every change the script runs fatsort to put the card in number order. Numbers sort naturally and case is ignored, so 2 comes before 10.
+Albums are folders at the top of the card, named `NN - Artist - Album`. Tracks are the audio files directly inside each album folder. The number sets the order the radio plays them in. The radio actually plays them in the order they sit on the card, so after every change the script runs fatsort to put the card in number order. Numbers sort naturally and case is ignored, so 2 comes before 10.
 
 
 ## Requirements
 
-- macOS or Linux, and [uv](https://docs.astral.sh/uv/). uv fetches Python 3.14 and the packages the script needs on the first run.
+- macOS or Linux, and [uv](https://docs.astral.sh/uv/). uv fetches Python 3.14 or newer and the packages the script needs on the first run.
 - [fatsort](https://fatsort.sourceforge.io) puts the card in play order. Without it, nothing gets sorted.
 - [par2](https://github.com/Parchive/par2cmdline) adds repair data to backups. Optional.
 - flac checks FLAC files for damage, and ffmpeg checks every format. Optional, but finding damaged tracks needs one of them.
 
-When it starts, the script tells you if any of these are missing.
+When it starts, the script tells you if fatsort or par2 is missing, or if neither flac nor ffmpeg is installed.
 
-Some steps need your admin password: fatsort, clearing Spotlight's folder off the card, and reading the card's file table. sudo asks for it in the terminal, so it never reaches the script or its logs.
+Some steps need your admin password: fatsort, clearing Spotlight's folder off the card, and reading the card's file table. Clearing Spotlight's folder doesn't ask when your terminal has Full Disk Access. sudo asks for the password in the terminal, so it never reaches the script or its logs.
 
 
 ## Linux
 
-The same script runs on Linux with `lsblk`, and ideally `udisks2`. exFAT cards need fatsort 1.7 or newer. Debian 13 and Ubuntu ship 1.6, which can't read exFAT, so build 1.7 from [fatsort.sourceforge.io](https://fatsort.sourceforge.io). FAT32 cards are fine with 1.6. Linux can't check for [tracks stored in pieces](#tracks-stored-in-pieces).
+The same script runs on Linux with `lsblk`, and ideally `udisks2`. Without udisks2, unmounting the card takes your password, and **Keep it mounted** can't mount the card again. exFAT cards need fatsort 1.7 or newer. Debian 13 and Ubuntu ship 1.6, which can't read exFAT, so build 1.7 from [fatsort.sourceforge.io](https://fatsort.sourceforge.io). FAT32 cards are fine with 1.6. Linux can't check for [tracks stored in pieces](#tracks-stored-in-pieces).
 
 
 ## Options
@@ -57,12 +57,13 @@ A mistyped option gets a suggestion, like "Did you mean --check?".
 
 | Where | What |
 |---|---|
-| `~/.config/tecsun-manager/state.json` | What the script remembers: the last folders and card, when each card's albums last changed and were last backed up, your backups folder, and your [Settings](#settings). Delete it to forget them, and both settings go back on. Uses `$XDG_CONFIG_HOME` instead of `~/.config` when that's set |
-| `~/.config/tecsun-manager/logs/` | A log of each run. See [Settings](#settings) |
+| `~/.config/tecsun-manager/state.json` | What the script remembers: the last folders, card and backup, when each card's albums last changed and were last backed up, your backups folder, and your [Settings](#settings). Delete it to forget them, and both settings go back on. Uses `$XDG_CONFIG_HOME` instead of `~/.config` when that's set |
+| `~/.config/tecsun-manager/logs/` | A log of each run, beside `state.json`. See [Settings](#settings) |
 | `tecsun-backups/` | Where backups go: next to the script, unless you pick another folder |
+| `~/Desktop/Tecsun Restored/` | Where [Restore](#restore) suggests unpacking, until you pick another folder |
 | `tecsun-playlist.epub`, `.pdf`, `.html` | Where [Generate playlist](#generate-playlist) saves its files: next to the script |
 
-A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio file types, fatsort's flags, how much repair data backups get, the compression level, and the printed playlist's type size.
+A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio file types, how much repair data backups get, the compression level, where backups and playlists go, and the printed playlist's type size.
 
 
 ## Getting around
@@ -73,16 +74,17 @@ A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio f
 | Type | Filter a long list. What you've typed shows under the question |
 | Backspace | Edit the filter |
 | Tab | Complete a typed path |
-| Esc | Go back: Back in a list, No on a yes/no question, Quit at the menu |
-| Ctrl-C | Stop. If the card is being rewritten, the script waits until that's done |
+| y, n | Answer a yes/no question. Enter takes the default, the capital letter in (Y/n) |
+| Esc | Go back: Back in a list, No on most yes/no questions, Quit at the menu. In a filtered list it clears the filter first. Where No would go ahead, like skipping a backup before a delete, Esc goes back instead |
+| Ctrl-C | Stop. If albums are being sorted, renamed or deleted, or the card is being reformatted, the script waits until that's done |
 
-- Lists show the items first, like albums or cards. Below a line are the actions, in their own color: → looks elsewhere, ← goes back.
+- Lists show the items first, like albums or cards. Below a line are the actions, in their own color: → looks elsewhere, ← goes back, ↻ rescans.
 - The line above each question says what's being done to what, like "Moving 03 - Morning Edition". Once you've confirmed the card, its name, album count and free space sit at the right of that line.
 - Before most changes, the script asks if you want to go ahead. The first answer spells out the change, like "Copy 12 tracks, then clean and sort", and the second is Back. When the change deletes albums, or drops files from a kept-current backup, the highlight starts on Back, so pressing Enter right away cancels.
 - Replace everything asks you to type the card's name before it erases the card, so you can't erase the wrong one.
 - After a change, a box titled with the card's name lists what changed and whether the play order checked out.
-- After a task, the menu comes back. Later tasks reuse the confirmed card until it's ejected.
-- Each time the menu comes back after a task, and each time Help opens, a line with the time marks the spot, so the newest is easy to find when you scroll back. To start each task on a clean screen instead, turn off [Keep scrollback](#keep-scrollback).
+- After a task, the menu comes back. Later tasks reuse the confirmed card until it's ejected, or a drive is plugged in or removed.
+- Each time the menu comes back after a task finishes, and each time Help opens, a line with the time marks the spot, so the newest is easy to find when you scroll back. To start each task on a clean screen instead, turn off [Keep scrollback](#keep-scrollback).
 
 ### The menu
 
@@ -92,13 +94,13 @@ A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio f
 | Backups | Back up, Restore |
 | Info | Check, Stats, Generate playlist |
 
-Below those are Help, with a page for each task, then Settings and Quit. If the script has changed a card since its last backup, a reminder shows above the menu. Changes made in Finder don't count, since it can't know about them.
+Below those are Help, with a page for each task, then Settings and Quit. If the script has changed a plugged-in card since its last backup, a reminder shows above the menu. Changes made in Finder don't count, since it can't know about them.
 
 ### Picking the card
 
-You pick the card from a list of removable drives. The computer's own drives never show up. With one card plugged in, the script goes straight to "Is this the right card?" and shows what's on it. If no card is found, it offers to rescan. Back up and Check › Find damaged tracks only read the card, so they list the cards beside **A folder** instead of asking. If they then offer to clean the card, the offer names it.
+You pick the card from a list of removable and external drives. The computer's own drives never show up. With one card plugged in, the script goes straight to "Is this the right card?" and shows what's on it. If no card is found, it offers to rescan. Back up and Check › Find damaged tracks only read the card, so they list the cards beside **A folder** instead of asking. If they then offer to clean the card, the offer names it.
 
-Some cards are greyed out and can't be picked: a locked card, a card that isn't FAT or exFAT, a card with no volume ID (the script checks that ID before every write), and an XTEINK e-reader's card (it has a `.crosspoint` folder, which cleaning would delete). Tasks that only read, like Stats and Back up, can still use a locked card or one with no volume ID.
+Some cards are greyed out and can't be picked: a locked card, a card that isn't FAT or exFAT, a card with no volume ID (the script checks that ID before every write), an XTEINK e-reader's card (it has a `.crosspoint` folder, which cleaning would delete), and a card mounted on a system folder instead of its own. Tasks that only read, like Stats and Back up, can still use a locked card or one with no volume ID.
 
 ### Keeping the card mounted
 
@@ -115,11 +117,11 @@ While a card is still mounted, the menu shows a yellow **Clean and eject** item 
 
 - Put just the new albums in a folder, numbered where they go, like `05 - Artist - Album`.
 - If an album on the card already has that number, it asks where the new one goes.
-- Tracks already on the card are skipped.
-- **Add how?** offers **Add albums**, or **Replace everything**, which erases the card and copies the folder as it is. Replace everything asks you to type the card's name, warns if the card would end up with fewer albums, and keeps the card's format.
-- It asks for your password before copying, so each track can land in one piece. See [Tracks stored in pieces](#tracks-stored-in-pieces).
-- It matches albums by title, so if two albums share a title, in the folder or on the card, it stops and names them.
-- Afterwards it cleans, sorts and ejects the card, and offers a backup.
+- A track already on the card with the same name and size is skipped. One whose size changed is replaced.
+- **Add how?** offers **Add albums**, or **Replace everything**, which erases the card and copies the folder's albums under their own names. Replace everything asks you to type the card's name, warns if the card would end up with fewer albums, and keeps the card's format.
+- On a FAT32 card, it asks for your password before copying, so each track can land in one piece. See [Tracks stored in pieces](#tracks-stored-in-pieces).
+- **Add albums** matches albums by title, so if two albums share a title, in the folder or on the card, it stops and names them.
+- Afterwards it offers a backup, then cleans, sorts and ejects the card.
 
 ### Arrange albums
 
@@ -128,8 +130,8 @@ While a card is still mounted, the menu shows a yellow **Clean and eject** item 
 - **Move an album** puts it somewhere else. The rest renumber.
 - **Rename an album** changes its name. The number stays.
 - **Delete an album** removes it from the card. The rest renumber. First it says when the card was last backed up and offers a fresh backup.
-- **Fix numbering** shows up when the numbers have gaps or repeats. It closes them up without changing the order.
-- **Apply and clean** makes all your changes, then cleans, sorts and ejects.
+- **Fix numbering** shows up when the numbers have gaps, repeats or uneven zero-padding, or an album has no number. It renumbers without changing the order.
+- **Apply and clean** makes all your changes, offers a backup unless you deleted albums, then cleans, sorts and ejects.
 
 Nothing changes until you apply. **Cancel** asks before it throws your changes away.
 
@@ -137,7 +139,7 @@ Nothing changes until you apply. **Cancel** asks before it throws your changes a
 
 `--clean` · Run this whenever the card has been plugged into a Mac, before it goes back in the radio.
 
-- Removes every hidden item at the top of the card (any name that starts with a dot, like `.fseventsd` and `.Spotlight-V100`), and `._` and `.DS_Store` files anywhere. The radio can mistake them for albums. Don't keep files of your own on the card under names that start with a dot.
+- Removes every hidden item at the top of the card (any name that starts with a dot, like `.fseventsd` and `.Spotlight-V100`), and `._`, `.DS_Store` and `.apdisk` files and leftover partial copies anywhere. The radio can mistake them for albums. Don't keep files of your own on the card under names that start with a dot.
 - Finds tracks stored in pieces, and offers to rewrite each one whole.
 - Sorts the card with fatsort, reads the order back to check it, and ejects.
 
@@ -151,7 +153,7 @@ Asking macOS for an unbroken spot doesn't work on its FAT driver. So the script 
 
 - Finding every one means reading the card's file table directly, which takes your admin password. This only works on FAT32 cards.
 - Without the password, or on exFAT, a quick check names the ones it can prove, but those can't be rewritten: rebuild the card instead (see below). Check says when the quick check can't rule out the rest.
-- When no gap is big enough for a track, it says so. To rebuild the card with every track in one piece: back up the card, restore the backup into a folder, then **Add → Replace everything** from that folder.
+- When no gap is big enough for a track, it says so. To rebuild the card with every track in one piece: back up the card, restore the backup, then **Add → Replace everything** from the restored folder.
 - Linux can't check for this.
 
 ### Back up
@@ -160,7 +162,7 @@ Asking macOS for an unbroken spot doesn't work on its FAT driver. So the script 
 
 **Into?** offers a new dated backup, or a kept-current one.
 
-A dated backup gets its own folder and is never changed. Its files are named after the card or folder you back up:
+A dated backup gets its own folder and is never changed, except when Restore repairs damage from its repair data, which puts back the original. Its files are named after the card or folder you back up:
 
 ```
 tecsun-backups/2026-10-08/
@@ -179,24 +181,24 @@ tecsun-backups/TECSUN 990X (kept current)/
   .source.json                  which card or folder it's of, and when it was last updated
 ```
 
-- It's the only kind of backup the script ever changes.
+- It's the only kind of backup the script updates.
 - A compressed archive can't be patched, so each update re-reads the whole card. It takes about as long as a new backup and needs room for two copies until the new one checks out.
-- Before updating, it lists what changes: albums added, dropped or renumbered, and files added or dropped. When anything would be dropped, Enter means No.
-- A file that kept its name but changed its contents is most likely damage, so it names those and asks first.
+- Before updating, it lists what changes: albums added, dropped, renumbered or renamed, and files added or dropped. When anything would be dropped, Enter means No.
+- A file that kept its name but changed its contents is most likely damage, so it names those and asks before the new copy moves in.
 - The new copy is built beside the old one and only moves in once it reads back cleanly. A stopped update leaves the old copy whole.
 
-Add and Arrange offer a backup when they finish: an update of the card's kept-current backup when it has one, otherwise a new dated one. Before Arrange deletes albums, the offer is always a new dated backup.
+Add and Arrange offer a backup when they finish, if they changed anything: an update of the card's kept-current backup when it has one, otherwise a new dated one. When Arrange deletes albums, the offer comes before the delete instead, and is always a new dated backup.
 
-**Save the backup where?** starts at the folder in use. Type another to change it, and it's remembered. On macOS, a folder on a drive that isn't plugged in is refused rather than made on your computer.
+**Save the backup where?** starts at the folder in use. Type another to change it, and it's remembered. On macOS, a folder on a drive that isn't plugged in is refused rather than made on your computer. A folder inside what you're backing up is refused, and so is a FAT drive when the backup would pass 4 GB.
 
 ### Restore
 
-`--restore` · Unpacks a backup into a folder and checks every file against its checksum.
+`--restore` · Unpacks a backup and checks every file against its checksum. The files land in a folder named after the card or folder that was backed up, inside the folder you pick.
 
 - A damaged backup with repair data is repaired first (needs par2).
-- It unpacks into a hidden folder first. Files already there are replaced only after everything checks out.
+- It unpacks into a hidden folder first. Files already there are replaced only after everything checks out. If anything fails its check, what was unpacked moves to a separate `(unverified <date>)` folder beside it instead.
 - A backup without its checksum file can only be checked for unpacking cleanly, and it says so.
-- It never restores straight onto a card. To put a backup back on the card, restore it into a folder, then use **Add → Replace everything**.
+- It never restores straight onto a card. To put a backup back on the card, restore it, then use **Add → Replace everything** from the restored folder.
 - It also reads `.tar.xz`, `.tar.bz2` and `.tar.gz` backups.
 
 ### Check
@@ -205,7 +207,7 @@ Add and Arrange offer a backup when they finish: an update of the card's kept-cu
 
 - **Verify a backup**: tests every file inside it against its checksums, without unpacking, and checks its repair data.
 - **Find damaged tracks**: decodes every track on the card, one album, or a folder, and names any that don't play cleanly.
-- **Read the card's play order**: reads the order straight off the card and compares it with the numbers. It also names hidden files and tracks stored in pieces, then offers to clean, sort and eject. On macOS the card stays mounted while it reads.
+- **Read the card's play order**: reads the order straight off the card and compares it with the numbers. On macOS the card stays mounted while it reads, and it also names hidden files and tracks stored in pieces. If anything's wrong, it offers to clean, sort and eject. On Linux it offers to sort.
 
 ### Stats
 
@@ -234,15 +236,15 @@ The menu's **Settings** has two settings, both on by default.
 
 Each run writes a log of what it showed, what it asked and your answers, every command it ran, and every change to the card. When a run stops or crashes, its last lines name the log. Your password never ends up in it.
 
-- All the logs together stay under 5 MB. When they'd pass that, the oldest are deleted first.
+- All the logs together stay around 5 MB. Each time the script starts, it deletes the oldest to make room.
 - In a huge run, like checking thousands of tracks, it stops logging each file once the log passes 1 MB, but still logs everything else.
 - Turning logging off stops the current log right away and offers to delete the old ones.
 
 ### Keep scrollback
 
-Everything the script shows stays in the terminal, so you can scroll back through the whole session. Each time the menu comes back after a task, and each time Help opens, a line with the time marks the spot. The time matches the log's.
+Everything the script shows stays in the terminal, so you can scroll back through the whole session. Each time the menu comes back after a task finishes, and each time Help opens, a line with the time marks the spot. The time matches the log's.
 
-With Keep scrollback off, the menu runs on the terminal's second screen, the one `less` and `vim` use. It's the same window, not a new one. Each pick from the menu starts a clean screen, so a task's result stays in view until you pick the next thing. Quit brings back what the terminal showed before, and the last page stays.
+With Keep scrollback off, the menu runs on the terminal's second screen, the one `less` and `vim` use. It's the same window, not a new one. Each pick from the menu starts a clean screen, so a task's result stays in view until you pick the next thing. Quit brings back what the terminal showed before, then adds a short closing page that stays.
 
 - A page taller than the window loses its top, since that screen has no scrollback.
 - Keys pressed while a task runs are dropped. Many terminals turn the mouse wheel into arrow keys on that screen, and a scroll shouldn't move the next question's highlight.
@@ -253,10 +255,10 @@ With Keep scrollback off, the menu runs on the terminal's second screen, the one
 
 ## Safety
 
-- Before a task changes the card, the script shows what's on it and asks if it's the right one. After Back up or Find damaged tracks, the offer to clean names the card instead. Before every write, it checks by the card's ID that the same card is still there. A swapped card stops the run.
+- Before a task changes the card, the script shows what's on it and asks if it's the right one. A card confirmed earlier in the run, the yellow **Clean and eject** item, and the offers to clean after Back up, Find damaged tracks or at Quit name the card instead. Before every write, it checks by the card's ID that the same card is still there. A swapped card stops the run.
 - In a filtered list, Enter does nothing until the filter matches, so a typo can't pick the first album.
 - Tracks copy under a temporary name and are flushed to the card before they get their real name, so a cut-short copy never leaves half a track.
-- If you press Ctrl-C, or the run gets a `kill`, while fatsort or a batch of renames is rewriting the card, the script waits for that to finish first. fatsort itself is never interrupted.
+- If you press Ctrl-C, or the run gets a `kill`, while fatsort, a batch of renames or deletes, or a reformat is changing the card, the script waits for that to finish first. fatsort itself is never interrupted.
 - A rewritten track replaces the original only after the copy reads back the same and in one piece. A copy left by a stopped rewrite is never cleaned away while it might be the only one.
 - Arrange's **Delete** only ever removes album folders. Clean removes only hidden items, and only Replace everything erases the whole card.
 - The folder you copy from is only ever read.
@@ -267,9 +269,9 @@ With Keep scrollback off, the menu runs on the terminal's second screen, the one
 | Code | Means |
 |---|---|
 | 0 | Everything went well |
-| 1 | Something failed, or Check found a damaged backup, a damaged track, or the card out of play order |
+| 1 | Something failed, or Check found a damaged backup or a damaged track, or left the card out of play order, or couldn't read the order |
 | 2 | An option it doesn't know, two options at once, a path, no terminal, or a system other than macOS or Linux |
-| 130 | Stopped with Ctrl-C |
+| 130 | Stopped with Ctrl-C, or Ctrl-D in an empty field |
 | 128 + N | Stopped by signal N, like a `kill` or a closed terminal |
 
 Warnings and errors go to stderr.
@@ -283,6 +285,6 @@ rm -r "${XDG_CONFIG_HOME:-$HOME/.config}/tecsun-manager"  # what it remembers, a
 uv cache prune                                            # the script's cached environment
 ```
 
-uv still keeps the packages it downloaded. `uv cache clean` empties its cache, and `uv python uninstall 3.14` removes the Python it fetched, if it fetched one. Do either only if nothing else of yours uses uv.
+uv still keeps the packages it downloaded. `uv cache clean` empties its cache, and `uv python uninstall <version>` removes the Python it fetched, if it fetched one. `uv python list --only-installed` shows which version that is. Do either only if nothing else of yours uses uv.
 
 Then delete the folder. Move `tecsun-backups/` somewhere safe first: your backups are in it.

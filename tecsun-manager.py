@@ -5201,7 +5201,7 @@ TASK_HINTS = {
     "add": "copy new albums onto the card, each at its number",
     "arrange": "move, rename or delete albums; the rest renumber",
     "clean": "remove macOS hidden files, re-sort, eject",
-    "backup": "the card or a folder, into a new archive",
+    "backup": "the card or a folder, into an archive",
     "restore": "unpack a backup and check every file",
     "check": "backups, damaged tracks, play order",
     "stats": "albums, tracks and formats at a glance",
@@ -5221,15 +5221,15 @@ HELP_PAGES = {  # one per task, in menu order
     "add": HelpPage(
         "Add albums", "",
         "Copies the albums in a folder onto the card, each at the place its number says, and renumbers the albums "
-        "after it. Tracks already on the card aren't copied again. Replace everything erases the card first, then "
-        "copies the folder as it is.",
+        "after it. Tracks already on the card aren't copied again, unless their size changed. Replace everything "
+        "erases the card first, then copies the folder's albums under their own names.",
         (("Run directly", ((f"{PROG} --add", "pick the card and the folder as you go"),)),
          ("Good to know", ("Put just the new albums in a folder, numbered where they go, like 05 - Album.",
                            "If an album already has that number, it asks where the new one goes.",
-                           ("The card's small gaps are filled with a throwaway file while it copies, so each track "
-                            "lands in one piece and the radio doesn't skip it. That reads the card's file table, which "
-                            "needs your password, so Add asks for it before copying."),
-                           "Afterwards it cleans, sorts and ejects the card, and offers a backup.")))),
+                           ("On FAT32, the card's small gaps are filled with a throwaway file while it copies, so each "
+                            "track lands in one piece and the radio doesn't skip it. That reads the card's file table, "
+                            "which needs your password, so Add asks for it before copying."),
+                           "Afterwards it offers a backup, then cleans, sorts and ejects the card.")))),
     "arrange": HelpPage(
         "Arrange albums", "",
         "Moves, renames or deletes albums on the card, and renumbers the rest so the play order stays right. "
@@ -5244,8 +5244,8 @@ HELP_PAGES = {  # one per task, in menu order
         (("Run directly", ((f"{PROG} --clean", "pick the card as you go"),)),
          ("Good to know", (("Run it after plugging the card in to look at it: the radio can take those hidden "
                            "folders for albums."),
-                           ("The radio skips a track stored in pieces, though the file is fine. Clean offers to "
-                            "rewrite each in one piece, and replaces it only with a copy checked against it."),
+                           ("The radio skips a track stored in pieces, though the file is fine. On FAT32, Clean offers "
+                            "to rewrite each in one piece, and replaces it only with a copy checked against it."),
                            ("Finding every one reads the card's file table, which needs your password; on exFAT "
                             "only a quick check is possible."),
                            "Sorting uses fatsort, which may ask for your password.",
@@ -5268,7 +5268,7 @@ HELP_PAGES = {  # one per task, in menu order
                             "copy."),
                            ("After Add or Arrange, the backup offered is the kept-current one when the card has one. "
                             "Before deleting albums it's always a new dated backup."))),
-         ("Good to know", ("Each dated backup gets a new folder, and is never changed.",
+         ("Good to know", ("Each dated backup gets a new folder, and is never changed, except when Restore repairs it.",
                            ("The menu says when this script has changed a card's albums since its last backup. "
                             "Changes made in Finder aren't known."),
                            ('"Save the backup where?" starts at the backups folder in use. Type another to change '
@@ -5279,8 +5279,8 @@ HELP_PAGES = {  # one per task, in menu order
         "there are replaced only once everything checks out. A backup without its checksum file is only checked "
         "for unpacking cleanly.",
         (("Run directly", ((f"{PROG} --restore", "pick the backup and the folder as you go"),)),
-         ("Good to know", (("To put a backup back on the card, restore it into a folder, then use Add albums and "
-                           "Replace everything."),
+         ("Good to know", (("To put a backup back on the card, restore it, then use Add albums and Replace "
+                           "everything on the restored folder."),
                            "It also reads .tar.xz, .tar.bz2 and .tar.gz backups.")))),
     "check": HelpPage(
         "Check", "",
@@ -5289,8 +5289,8 @@ HELP_PAGES = {  # one per task, in menu order
         (("Run directly", ((f"{PROG} --check", "pick what to check as you go"),)),
          ("Good to know", (("On macOS the play order is read with the card mounted; fixing it cleans, sorts and "
                            "ejects the card."),
-                           ("Reading the order also names hidden files and tracks stored in pieces, which the radio "
-                            "skips. Finding every one of those needs your password."))))),
+                           ("On macOS, reading the order also names hidden files and tracks stored in pieces, which "
+                            "the radio skips. Finding every one of those needs your password."))))),
     "stats": HelpPage(
         "Stats", "",
         "The card at a glance: albums and tracks, how full it is, its formats and largest albums, each with a "
@@ -5308,7 +5308,8 @@ HELP_PAGES = {  # one per task, in menu order
                             "same name, so give a newer list another name."),
                            ("Print the PDF at 100%, not fit to page. Cut the sheet down the middle, then fold a half "
                             "across its middle into a card. When the list fits one card, the other half is a spare."),
-                           "Open the web page in any browser: one to four columns, light or dark with the system.")))),
+                           ("Open the web page in any browser: up to four columns, two in a tall window, light or dark "
+                            "with the system."))))),
 }
 
 def logs_note(state: dict) -> str:
@@ -5316,7 +5317,7 @@ def logs_note(state: dict) -> str:
     if not state.get("debug_log", True):
         return "a log of each run, when Debug logging is on in Settings; it's off"
     return (f"a log of each run: what it showed, asked and ran, for working out what went wrong. "
-            f"{human(LOGS_SPACE)} at most in all, the oldest deleted first; Settings turns it off")
+            f"About {human(LOGS_SPACE)} in all, the oldest deleted as each run starts; Settings turns it off")
 
 
 def help_topics(state: dict) -> tuple[HelpPage, ...]:
@@ -5328,10 +5329,13 @@ def help_topics(state: dict) -> tuple[HelpPage, ...]:
             (("Keys", (("↑ ↓  Enter", "move, pick"),
                        ("type", "filter a long list; what you've typed shows under the question"),
                        ("Backspace", "edit the filter"),
-                       ("Esc", "go back: Back in a list, No on a yes/no question, Quit at the menu"),
+                       ("y  n", "answer a yes/no question; Enter takes the default"),
+                       ("Esc", ("go back: Back in a list, No on most yes/no questions, Quit at the menu; a typed "
+                                "filter is cleared first")),
                        ("Tab", "complete a typed path"),
-                       ("under the line", "actions, not things listed: → looks elsewhere, ← goes back"),
-                       ("Ctrl-C", "stop; while the card is rewritten it waits until that's done"),
+                       ("under the line", "actions, not things listed: → looks elsewhere, ← goes back, ↻ rescans"),
+                       ("Ctrl-C", ("stop; while albums are sorted, renamed or deleted, or the card reformatted, it "
+                                   "waits until that's done")),
                        ("yellow", "a card left mounted: cleans and ejects it"))),)),
         HelpPage(
             "Backups and safety", "play order, backups, and what's checked before writing",
@@ -5357,15 +5361,16 @@ def help_topics(state: dict) -> tuple[HelpPage, ...]:
             "Files and settings", "what it remembers, and the tools it uses",
             "It remembers the last folders and card, when each card's albums last changed and when it was backed "
             "up, and where backups go.",
-            (("Files", ((tilde(STATE_FILE), "all of that, and a backups folder you picked; delete it to forget them"),
+            (("Files", ((tilde(STATE_FILE), ("all of that, a backups folder you picked, and your settings; delete it "
+                                             "to forget them")),
                         (tilde(logs_folder()), logs_note(state)),
                         (tilde(backups_from(state)), backups_note(state)),
                         'Type another backups folder at "Save the backup where?" to change it.')),
              ("Settings", ("Debug logging: the menu's Settings turns the log of each run on or off.",
                            ("Keep scrollback: on, everything stays in the terminal, and a line with the time marks "
-                            "each return to the menu. Off, each pick from the menu starts a clean screen."),
-                           ("Audio file types, fatsort flags, repair-data percentage, compression level and the "
-                            "printed playlist's type size sit at the top of tecsun-manager.py."))),
+                            "each return to the menu after a task. Off, each pick from the menu starts a clean screen."),
+                           ("Audio file types, repair-data percentage, compression level, where backups and "
+                            "playlists go, and the printed playlist's type size sit at the top of tecsun-manager.py."))),
              ("Tools", (("fatsort", "play order; the one that matters most"),
                         ("par2", "repair data for backups"),
                         ("flac or ffmpeg", "finding damaged tracks"))))),
