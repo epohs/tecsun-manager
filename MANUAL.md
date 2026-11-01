@@ -62,13 +62,13 @@ A mistyped option gets a suggestion, like "Did you mean --check?".
 | Backspace | Edit the filter |
 | Tab | Complete a typed path |
 | y, n | Answer a yes/no question. Enter takes the default, the capital letter in (Y/n) |
-| Esc | Go back: Back in a list, No on most yes/no questions, Quit at the menu. In a filtered list it clears the filter first. Where No would go ahead, like skipping a backup before a delete, Esc goes back instead |
+| Esc | Go back: **Back** in a list, No on most yes/no questions, Quit at the menu. In a filtered list it clears the filter first. Where No would go ahead, like skipping a backup before a delete, Esc goes back instead |
 | Ctrl-C | Stop. If albums are being sorted, renamed or deleted, or the card is being reformatted, the script waits until that's done |
 
 - Lists show the items first, like albums or cards. Below a line are the actions, in their own color: → looks elsewhere, ← goes back, ↻ rescans.
 - The line above each question says what's being done to what, like "Moving 03 - Morning Edition". Once you've confirmed the card, its name, album count and free space sit at the right of that line.
-- Before most changes, the script asks if you want to go ahead. The first answer spells out the change, like "Copy 12 tracks, then clean and sort", and the second is Back. When the change deletes albums, or drops files from a kept-current backup, the highlight starts on Back, so pressing Enter right away cancels.
-- Replace everything asks you to type the card's name before it erases the card, so you can't erase the wrong one.
+- Before most changes, the script asks if you want to go ahead. The first answer spells out the change, like "Copy 12 tracks, then clean and sort", and the second is **Back**. When the change deletes albums, or drops files from a kept-current backup, the highlight starts on **Back**, so pressing Enter right away cancels.
+- **Replace everything** asks you to type the card's name before it erases the card, so you can't erase the wrong one.
 - After a change, a box titled with the card's name lists what changed and whether the play order checked out.
 - After a task, the menu comes back. Later tasks reuse the confirmed card until it's ejected, or a drive is plugged in or removed.
 - Each time the menu comes back after a task finishes, and each time Help opens, a line with the time marks the spot, so the newest is easy to find when you scroll back. To start each task on a clean screen instead, turn off [Keep scrollback](#keep-scrollback).
@@ -85,7 +85,9 @@ Below those are Help, with a page for each task, then Settings and Quit. If the 
 
 ### Picking the card
 
-You pick the card from a list of removable and external drives. The computer's own drives never show up. With one card plugged in, the script goes straight to "Is this the right card?" and shows what's on it. If no card is found, it offers to rescan. Back up and Check › Find damaged tracks only read the card, so they list the cards beside **A folder** instead of asking. If they then offer to clean the card, the offer names it.
+You pick the card from a list of removable and external drives. The computer's own drives never show up. With one card plugged in, the script goes straight to "Is this the right card?" and shows what's on it. If no card is found, it offers to rescan.
+
+Two tasks can use a folder instead of a card: Back up, and **Find damaged tracks** under Check. They're read-only, so they skip "Is this the right card?". Instead they ask what to back up or scan, and list the cards and **A folder** together. When one of them finishes with a card, it offers to clean it, since macOS leaves hidden files on any card that's plugged in. The question names the card, like "Clean, re-sort and eject RADIO now?" A locked card, or one with no volume ID, isn't offered this, since the script can't change it.
 
 Some cards are greyed out and can't be picked: a locked card, a card that isn't FAT or exFAT, a card with no volume ID (the script checks that ID before every write), an XTEINK e-reader's card (it has a `.crosspoint` folder, which cleaning would delete), and a card mounted on a system folder instead of its own. Tasks that only read, like Stats and Back up, can still use a locked card or one with no volume ID.
 
@@ -105,7 +107,7 @@ While a card is still mounted, the menu shows a yellow **Clean and eject** item 
 - Put just the new albums in a folder, numbered where they go, like `05 - Artist - Album`.
 - If an album on the card already has that number, it asks where the new one goes.
 - A track already on the card with the same name and size is skipped. One whose size changed is replaced.
-- **Add how?** offers **Add albums**, or **Replace everything**, which erases the card and copies the folder's albums under their own names. Replace everything asks you to type the card's name, warns if the card would end up with fewer albums, and keeps the card's format.
+- **Add how?** offers **Add albums**, or **Replace everything**, which erases the card and copies the folder's albums under their own names. **Replace everything** asks you to type the card's name, warns if the card would end up with fewer albums, and keeps the card's format.
 - On a FAT32 card, it asks for your password before copying, so each track can land in one piece. See [Tracks stored in pieces](#tracks-stored-in-pieces).
 - **Add albums** matches albums by title, so if two albums share a title, in the folder or on the card, it stops and names them.
 - Afterwards it offers a backup, then cleans, sorts and ejects the card.
@@ -217,7 +219,7 @@ Add and Arrange offer a backup when they finish, if they changed anything: an up
 
 ## Settings
 
-The menu's **Settings** has two settings, both on by default.
+The menu's Settings has two settings, both on by default.
 
 ### Debug logging
 
@@ -252,13 +254,13 @@ A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio f
 
 ## Safety
 
-- Before a task changes the card, the script shows what's on it and asks if it's the right one. It skips that question only when it already knows which card you mean, and names the card instead. That happens when you confirmed the card earlier in the run, when you pick the yellow **Clean and eject** item, and when it offers to clean the card after Back up, after Find damaged tracks, or at Quit.
+- Before a task changes the card, the script shows what's on it and asks if it's the right one. It skips that question only when it already knows which card you mean, and names the card instead. That happens when you confirmed the card earlier in the run, when you pick the yellow **Clean and eject** item, and when it offers to clean the card after Back up, after **Find damaged tracks**, or at Quit.
 - Before every write, the script checks the card's ID to make sure the same card is still there. A swapped card stops the run.
 - In a filtered list, Enter does nothing until the filter matches, so a typo can't pick the first album.
 - Tracks copy under a temporary name and are flushed to the card before they get their real name, so a cut-short copy never leaves half a track.
 - If you press Ctrl-C, or the run gets a `kill`, while fatsort, a batch of renames or deletes, or a reformat is changing the card, the script waits for that to finish first. fatsort itself is never interrupted.
 - A rewritten track replaces the original only after the copy reads back the same and in one piece. A copy left by a stopped rewrite is never cleaned away while it might be the only one.
-- Arrange's **Delete** only ever removes album folders. Clean removes only hidden items, and only Replace everything erases the whole card.
+- Arrange's **Delete** only ever removes album folders. Clean removes only hidden items, and only **Replace everything** erases the whole card.
 - The folder you copy from is only ever read.
 
 
