@@ -5831,7 +5831,9 @@ def stopped(message: str, code: int) -> int:
     os.sync()
     if RUN.card_in_use:
         warn("The card wasn't ejected. Writes are flushed; eject it before you pull it out.")
-    for card in (card for card in RUN.used.values() if card.writable):  # a locked card was only read
+    # Only a card Clean could take: a locked card, or one with no volume ID, was only read. Both are known
+    # already, unlike problem()'s other checks, which read the card.
+    for card in (card for card in RUN.used.values() if card.writable and card.uuid):
         warn(f"{esc(card.name)} may not play right until it's cleaned: run {PROG} --clean before it goes back "
              "in the radio.")
     if RUN.log:
