@@ -1,6 +1,6 @@
 # tecsun-manager manual
 
-[Synopsis](#synopsis) · [Options](#options) · [Exit status](#exit-status) · [Files](#files) · [Requirements](#requirements) · [Getting around](#getting-around) · [Tasks](#tasks) · [Settings](#settings) · [Safety](#safety) · [Linux](#linux) · [Uninstall](#uninstall)
+[Synopsis](#synopsis) · [Requirements](#requirements) · [Linux](#linux) · [Options](#options) · [Files](#files) · [Getting around](#getting-around) · [Tasks](#tasks) · [Settings](#settings) · [Safety](#safety) · [Exit status](#exit-status) · [Uninstall](#uninstall)
 
 
 ## Synopsis
@@ -14,6 +14,23 @@ tecsun-manager --help | --version
 With no options, the script opens a menu and asks questions as it goes. A task option skips the menu and runs just that task. Either way it's interactive, so it needs a terminal. It takes no paths: each task asks for its card or folder.
 
 Albums are folders at the top of the card, named `NN - Artist - Album`. The number sets the order the radio plays them in. The radio actually plays them in the order they sit on the card, so after every change the script runs fatsort to put the card in number order. Numbers sort naturally and case is ignored, so 2 comes before 10.
+
+
+## Requirements
+
+- macOS or Linux, and [uv](https://docs.astral.sh/uv/). uv fetches Python 3.14 and the packages the script needs on the first run.
+- [fatsort](https://fatsort.sourceforge.io) puts the card in play order. Without it, nothing gets sorted.
+- [par2](https://github.com/Parchive/par2cmdline) adds repair data to backups. Optional.
+- flac checks FLAC files for damage, and ffmpeg checks every format. Optional, but finding damaged tracks needs one of them.
+
+When it starts, the script tells you if any of these are missing.
+
+Some steps need your admin password: fatsort, clearing Spotlight's folder off the card, and reading the card's file table. sudo asks for it in the terminal, so it never reaches the script or its logs.
+
+
+## Linux
+
+The same script runs on Linux with `lsblk`, and ideally `udisks2`. exFAT cards need fatsort 1.7 or newer. Debian 13 and Ubuntu ship 1.6, which can't read exFAT, so build 1.7 from [fatsort.sourceforge.io](https://fatsort.sourceforge.io). FAT32 cards are fine with 1.6. Linux can't check for [tracks stored in pieces](#tracks-stored-in-pieces).
 
 
 ## Options
@@ -36,19 +53,6 @@ Use one option at a time. They can't be shortened, so `--clean` works but `--cl`
 A mistyped option gets a suggestion, like "Did you mean --check?".
 
 
-## Exit status
-
-| Code | Means |
-|---|---|
-| 0 | Everything went well |
-| 1 | Something failed, or Check found a damaged backup, a damaged track, or the card out of play order |
-| 2 | An option it doesn't know, two options at once, a path, no terminal, or a system other than macOS or Linux |
-| 130 | Stopped with Ctrl-C |
-| 128 + N | Stopped by signal N, like a `kill` or a closed terminal |
-
-Warnings and errors go to stderr.
-
-
 ## Files
 
 | Where | What |
@@ -59,18 +63,6 @@ Warnings and errors go to stderr.
 | `tecsun-playlist.epub`, `.pdf`, `.html` | Where [Generate playlist](#generate-playlist) saves its files: next to the script |
 
 A few rarely changed settings sit at the top of `tecsun-manager.py`: the audio file types, fatsort's flags, how much repair data backups get, the compression level, and the printed playlist's type size.
-
-
-## Requirements
-
-- macOS or Linux, and [uv](https://docs.astral.sh/uv/). uv fetches Python 3.14 and the packages the script needs on the first run.
-- [fatsort](https://fatsort.sourceforge.io) puts the card in play order. Without it, nothing gets sorted.
-- [par2](https://github.com/Parchive/par2cmdline) adds repair data to backups. Optional.
-- flac checks FLAC files for damage, and ffmpeg checks every format. Optional, but finding damaged tracks needs one of them.
-
-When it starts, the script tells you if any of these are missing.
-
-Some steps need your admin password: fatsort, clearing Spotlight's folder off the card, and reading the card's file table. sudo asks for it in the terminal, so it never reaches the script or its logs.
 
 
 ## Getting around
@@ -255,9 +247,17 @@ Each run writes a log of what it showed, what it asked and your answers, every c
 - The folder you copy from is only ever read.
 
 
-## Linux
+## Exit status
 
-The same script runs on Linux with `lsblk`, and ideally `udisks2`. exFAT cards need fatsort 1.7 or newer. Debian 13 and Ubuntu ship 1.6, which can't read exFAT, so build 1.7 from [fatsort.sourceforge.io](https://fatsort.sourceforge.io). FAT32 cards are fine with 1.6. Linux can't check for [tracks stored in pieces](#tracks-stored-in-pieces).
+| Code | Means |
+|---|---|
+| 0 | Everything went well |
+| 1 | Something failed, or Check found a damaged backup, a damaged track, or the card out of play order |
+| 2 | An option it doesn't know, two options at once, a path, no terminal, or a system other than macOS or Linux |
+| 130 | Stopped with Ctrl-C |
+| 128 + N | Stopped by signal N, like a `kill` or a closed terminal |
+
+Warnings and errors go to stderr.
 
 
 ## Uninstall
