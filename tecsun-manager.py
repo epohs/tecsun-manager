@@ -359,9 +359,11 @@ def listing(items: list[str], limit: int = 8, mark: str = "[bad]✗[/]") -> None
 @dataclass
 class Receipt:
     """What a task changed on the card, shown in a box at its end, so it's plain afterwards what's different:
-    a row per album (a mark, its name, a note), and counts for what needs no row of its own."""
+    a row per album (a mark, its name, a note), counts for what needs no row of its own, and the play order once
+    it's checked, which isn't a change of its own."""
     rows: list = field(default_factory=list)
     counts: list = field(default_factory=list)
+    order: str = ""
 
     def add(self, mark: str, name: str, note: str = "") -> None:
         self.rows.append((mark, name, note))
@@ -372,16 +374,17 @@ RECEIPT_MARKS = {"+": "ok", "−": "bad", "~": "accent", "↑": "accent", "↓":
 
 
 def show_receipt(card: Card, receipt: Receipt, limit: int = 8) -> None:
-    """The receipt box, titled with the card, when anything changed: up to `limit` rows, then a count."""
-    if not receipt.rows:
+    """The receipt box, titled with the card, when anything changed: up to `limit` rows, then the counts and the
+    play order. A renumber alone has no rows, only a count, and still gets its box."""
+    if not (receipt.rows or receipt.counts):
         return
     rows = receipt.rows[:limit]
-    width = min(44, max(len(nfc(name)) for _, name, _ in rows))
+    width = min(44, max((len(nfc(name)) for _, name, _ in rows), default=0))
     lines = [Text.assemble((f"{mark} ", RECEIPT_MARKS.get(mark, "")), short(nfc(name), width).ljust(width),
                            ("  " + nfc(note) if note else "", "hint")) for mark, name, note in rows]
     more = [f"… {len(receipt.rows) - limit} more"] if len(receipt.rows) > limit else []
-    if more or receipt.counts:
-        lines.append(Text(" · ".join(more + receipt.counts), style="hint"))
+    footer = more + receipt.counts + ([receipt.order] if receipt.order else [])
+    lines.append(Text(" · ".join(footer), style="hint"))
     boxed(lines, title=f"{card.name} now")
 
 
@@ -2869,8 +2872,8 @@ def arrange_receipt(numbering: Numbering, renames: list[tuple[str, str]], delete
             receipt.add("↑" if up else "↓", new, f"was {old_number or 'unnumbered'}")
         else:
             others += 1
-    if others:
-        receipt.counts.append(f"{plural(others, 'other')} renumbered")
+    if others:  # "others" only beside albums listed above it; Fix numbering lists none
+        receipt.counts.append(f"{plural(others, 'other' if receipt.rows else 'album')} renumbered")
     return receipt
 
 
@@ -2995,7 +2998,7 @@ def finish_card(card: Card, tools: Tools, state: dict, *, offer_backup: bool, ej
     if rewritten:
         receipt.add("↻", plural(rewritten, "track"), "rewritten in one piece")
     albums = sum(name in tree and name.casefold() not in WINDOWS_DIRS for name in tree.get("", []))
-    receipt.counts.append(f"{plural(albums, 'album')} in play order" if ordered else "play order not confirmed")
+    receipt.order = f"{plural(albums, 'album')} in play order" if ordered else "play order not confirmed"
     show_receipt(card, receipt)
     still = (f"{plural(in_pieces, 'track')} still in pieces, which the radio may skip. See above."
              if in_pieces else "")
