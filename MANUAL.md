@@ -213,7 +213,7 @@ Add and Arrange offer a backup when they finish, if they changed anything: an up
 |---|---|
 | `tecsun-playlist.epub` | An e-reader. Page one is the album list, then each album gets a chapter with its tracks. Its cover shows the first albums. Made for the XTEINK X4 |
 | `tecsun-playlist.pdf` | Printing. A card that folds up and lives in the radio's case |
-| `tecsun-playlist.html` | A browser. The album list fills the first screen, and each album in it links to its tracks and play times further down. One file, light or dark with your system |
+| `tecsun-playlist.html` | A browser. The album list fills the first screen, but on a tall window the page leaves no more than about 400 px of space below it. Each album in the list links to its row further down, which shows its tracks and play times. One file, light or dark with your system |
 
 - Each run replaces the last set. At **Save as**, **Another name…** writes a new set and keeps the old one.
 - **On the X4:** copy the EPUB onto its SD card. The X4 doesn't notice a book replaced under the same name, and keeps showing the old one's cover and chapters, so give a newer list another name.

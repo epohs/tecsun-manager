@@ -5036,10 +5036,10 @@ def playlist_pdf(listed: list[Listed], when: datetime) -> tuple[bytes, int]:
     return out.getvalue(), cards
 
 
-# The web page: the printed card's look, in newspaper columns. As many 17rem columns as fit, up to four, and two
-# at most in portrait; light or dark with the system. The list fills at least the first screen, then each album's
-# tracks follow in the same columns, and each album in the list links to its own. One file with nothing to load,
-# so it opens anywhere.
+# The web page: the printed card's look, the list in newspaper columns. As many 17rem columns as fit, up to four,
+# and two at most in portrait; light or dark with the system. The list fills the first screen, leaving at most 25em
+# under it, then each album's tracks follow in a row of their own, and each album in the list links to its row. One
+# file with nothing to load, so it opens anywhere.
 PLAYLIST_PAGE_STYLE = """
 :root {
   color-scheme: light dark;
@@ -5069,16 +5069,18 @@ body {
 main { max-width: 76rem; margin-inline: auto; }
 @media (orientation: landscape) { main { max-width: 90rem; } }
 
-/* The header and the list fill at least the first screen, with the browser's bars showing, so the tracks start
-   below it. A longer list just runs on. */
-.page-one { min-height: calc(100svh - max(1.5rem, env(safe-area-inset-top))); }
+/* The header and the list fill the first screen, with the browser's bars showing, so the tracks start below it.
+   The space under the list stops at 25em, so a tall desktop window doesn't open a screenful of nothing. A list
+   longer than the screen runs past this box; the float at its end keeps the tracks below it. */
+.page-one { max-height: calc(100svh - max(1.5rem, env(safe-area-inset-top))); padding-block-end: 25em; }
+.page-one::after { content: ""; float: left; margin-block-end: 2.5em; }   /* the tracks' top margin */
 
 header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25em 1em; margin-block-end: 1.25em; }
 h1 { margin: 0; font-size: 1.6em; line-height: 1.1; letter-spacing: -0.01em; }
 header p { margin: 0; color: var(--muted); font-size: 0.85em; }
 
-.albums, .tracks { columns: 17rem 4; column-gap: 2.5rem; }
-@media (orientation: portrait) { .albums, .tracks { columns: 18rem 2; } }
+.albums { columns: 17rem 4; column-gap: 2.5rem; }
+@media (orientation: portrait) { .albums { columns: 18rem 2; } }
 
 a { color: inherit; text-decoration: none; }
 cite { font-style: normal; }
@@ -5113,41 +5115,68 @@ cite { font-style: normal; }
 }
 .albums a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 0.15em; }
 
-/* The tracks: a rule and a heading, then each album. Its tracks' numbers line up under its number box, their
-   titles under the artist, and their times at the right, under the link back up. */
-.tracks { margin-block-start: 2.5em; border-block-start: 1px solid var(--rule); padding-block-start: 1.25em; }
-h2 { column-span: all; margin: 0 0 1em; font-size: 1.15em; }
+/* The tracks: a rule and a heading, then a row to an album, ruled off from the next. Its title, the link back
+   up and its track count are on the left; its tracks fill up to three columns on the right. */
+.tracks {
+  clear: both;
+  margin-block-start: 2.5em;
+  border-block-start: 1px solid var(--rule);
+  padding-block-start: 1.25em;
+}
+h2 { margin: 0 0 1em; font-size: 1.15em; }
 .tracks article {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  column-gap: 0.45em;
-  position: relative;
-  padding-block-end: 1.6em;   /* padding, not margin: a margin can push the next column's first album down */
-  break-inside: avoid;
+  grid-template-columns: minmax(13rem, 1fr) 2.4fr;
+  gap: 0.5em 2.5rem;
+  padding-block: 1em;
+  border-block-start: 1px solid var(--rule);
   scroll-margin-block-start: 1.25rem;
   text-wrap: pretty;
 }
-h3, .tracks ol, .tracks li {
+h2 + article { border-block-start: 0; padding-block-start: 0; }
+
+/* The title stays in view while a long album's tracks scroll by. The track count lines up under the artist. */
+hgroup {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: 0.45em;
+}
+h3 {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: subgrid;
   align-items: first baseline;
+  margin: 0;
+  font-size: 1em;
+  font-weight: 400;
 }
-h3 { margin: 0 0 0.1em; font-size: 1em; font-weight: 400; }
 h3 > a { color: var(--muted); padding-inline: 0.2em; }
 h3 > a:hover, h3 > a:focus-visible { color: var(--ink); }
-.tracks article > p { grid-column: 2 / -1; margin: 0 0 0.35em; color: var(--muted); font-size: 0.82em; }
-.tracks ol { margin: 0; padding: 0; list-style: none; row-gap: 0.12em; font-size: 0.88em; }
+hgroup > p { grid-column: 2 / -1; margin: 0.2em 0 0; color: var(--muted); font-size: 0.82em; }
+
+/* Each track: its number, right-aligned in a column as wide as the album's longest ("2.12" with a disc), its
+   title and its time */
+.tracks ol { columns: 15rem 3; column-gap: 2rem; margin: 0; padding: 0; list-style: none; font-size: 0.9em; }
+.tracks li {
+  display: grid;
+  grid-template-columns: max(1.6em, var(--number-width, 0ch)) 1fr auto;
+  column-gap: 0.45em;
+  align-items: first baseline;
+  padding-block-end: 0.18em;
+  break-inside: avoid;
+}
 .tracks li > span { justify-self: end; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* The album the list jumped to, tinted */
-.tracks article:target::before {
-  content: "";
-  position: absolute;
-  inset: -0.5em -0.5em 1.1em;
-  z-index: -1;
-  background: var(--tint);
-  border-radius: 0.15em;
+.tracks article:target { background: var(--tint); box-shadow: 0 0 0 0.5em var(--tint); border-radius: 0.15em; }
+
+/* On a narrow screen, the tracks go below the title */
+@media (max-width: 40rem) {
+  .tracks article { grid-template-columns: 1fr; }
+  hgroup { position: static; }
 }
 """
 
@@ -5167,17 +5196,22 @@ def web_album_line(item: Listed, digits: int) -> str:
     return f"{box}<span><b>{xml_text(item.artist)}</b>&nbsp;– {album}</span>" if item.artist else box + album
 
 
-def web_tracks(item: Listed) -> str:
-    """The album's track count and total time, then each track as its number, its title and its time. A total
-    is left off when any track's time is missing."""
+def web_album(anchor: str, item: Listed, digits: int) -> str:
+    """An album's row below the list: its title, the link back up, and its track count and total time, then
+    each track as its number, its title and its time. A total is left off when any track's time is missing."""
+    heading = (f"        <h3>{web_album_line(item, digits)}"
+               '<a href="#top" aria-label="Back to the album list">↑</a></h3>\n')
     if not item.tracks:
-        return ""
+        return f'    <article id="{anchor}">\n      <hgroup>\n{heading}      </hgroup>\n    </article>\n'
     times = [track.seconds for track in item.tracks]
     total = f" · {clock(sum(times))}" if None not in times else ""
+    width = max(len(track.number) for track in item.tracks)
     rows = "".join(f"        <li><span>{track.number}</span>{xml_text(track.title)}"
                    + (f"<span>{clock(track.seconds)}</span>" if track.seconds is not None else "") + "</li>\n"
                    for track in item.tracks)
-    return f"      <p>{plural(len(item.tracks), 'track')}{total}</p>\n      <ol>\n{rows}      </ol>\n"
+    return (f'    <article id="{anchor}">\n      <hgroup>\n{heading}'
+            f"        <p>{plural(len(item.tracks), 'track')}{total}</p>\n      </hgroup>\n"
+            f'      <ol style="--number-width: {width}ch">\n{rows}      </ol>\n    </article>\n')
 
 
 def playlist_html(listed: list[Listed], when: datetime) -> str:
@@ -5188,9 +5222,7 @@ def playlist_html(listed: list[Listed], when: datetime) -> str:
     anchors = [f"album-{index:0{width}d}" for index in range(1, len(listed) + 1)]
     rows = "".join(f'      <li><a href="#{anchor}">{web_album_line(item, digits)}</a></li>\n'
                    for anchor, item in zip(anchors, listed))
-    albums = "".join(f'    <article id="{anchor}">\n'
-                     f'      <h3>{web_album_line(item, digits)}<a href="#top" aria-label="Back to the album list">↑</a>'
-                     f"</h3>\n{web_tracks(item)}    </article>\n" for anchor, item in zip(anchors, listed))
+    albums = "".join(web_album(anchor, item, digits) for anchor, item in zip(anchors, listed))
     return ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
             f'<meta name="color-scheme" content="light dark">\n<title>{PLAYLIST_TITLE}</title>\n'
