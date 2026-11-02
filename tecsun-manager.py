@@ -5712,8 +5712,9 @@ def clean_page(picked) -> None:
     if not RUN.clean_pages or picked is QUIT:
         return
     clear_screen()
-    header()
-    say()
+    if picked != "help":  # Help's own header names it
+        header()
+        say()
 
 
 def menu(tools: Tools, state: dict) -> None:
