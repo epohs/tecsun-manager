@@ -11,6 +11,8 @@
   --paper: light-dark(#ffffff, #141414);
   --ink: light-dark(#141414, #ececec);
   --muted: light-dark(#6b6b6b, #9b9b9b);
+  --rule: light-dark(#d6d6d6, #353535);
+  --tint: light-dark(#f0f0f0, #232323);
   --box: light-dark(#141414, #ececec);
   --box-ink: light-dark(#ffffff, #141414);
   --gutter: clamp(1rem, 4vw, 3rem);
@@ -32,24 +34,24 @@ body {
 main { max-width: 76rem; margin-inline: auto; }
 @media (orientation: landscape) { main { max-width: 90rem; } }
 
+/* The header and the list fill the first screen, with the browser's bars showing, so the tracks start below it.
+   The space under the list stops at 25em, so a tall desktop window doesn't open a screenful of nothing. A list
+   longer than the screen runs past this box; the float at its end keeps the tracks below it. */
+.page-one { max-height: calc(100svh - max(1.5rem, env(safe-area-inset-top))); padding-block-end: 25em; }
+.page-one::after { content: ""; float: left; margin-block-end: 2.5em; }   /* the tracks' top margin */
+
 header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25em 1em; margin-block-end: 1.25em; }
 h1 { margin: 0; font-size: 1.6em; line-height: 1.1; letter-spacing: -0.01em; }
 header p { margin: 0; color: var(--muted); font-size: 0.85em; }
 
-ol { margin: 0; padding: 0; list-style: none; columns: 17rem 4; column-gap: 2.5rem; }
-@media (orientation: portrait) { ol { columns: 18rem 2; } }
+.albums { columns: 17rem 4; column-gap: 2.5rem; }
+@media (orientation: portrait) { .albums { columns: 18rem 2; } }
 
-/* The number box, then the title; a long title wraps under itself, not under the number */
-li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 0.45em;
-  align-items: first baseline;
-  padding-block-end: 0.55em;
-  break-inside: avoid;
-  text-wrap: pretty;
-}
+a { color: inherit; text-decoration: none; }
+cite { font-style: normal; }
+
 .number {
+  justify-self: start;
   background: var(--box);
   color: var(--box-ink);
   font-size: 0.92em;
@@ -59,52 +61,995 @@ li {
   border-radius: 0.12em;
 }
 .blank { visibility: hidden; }
-.artist { font-weight: 700; }
+
+/* The list. Each album is one link to its tracks: the number box, then the title, which wraps under itself and
+   not under the number. Only the album's name underlines. */
+.albums { margin: 0; padding: 0; list-style: none; }
+.albums li { padding-block-end: 0.55em; break-inside: avoid; text-wrap: pretty; }
+.albums a {
+  display: inline-grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.45em;
+  align-items: first baseline;
+  vertical-align: top;
+}
+.albums a:hover cite, .albums a:focus-visible cite {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+.albums a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 0.15em; }
+
+/* The tracks: a rule and a heading, then a row to an album, ruled off from the next. Its title, the link back
+   up and its track count are on the left; its tracks fill up to three columns on the right. */
+.tracks {
+  clear: both;
+  margin-block-start: 2.5em;
+  border-block-start: 1px solid var(--rule);
+  padding-block-start: 1.25em;
+}
+h2 { margin: 0 0 1em; font-size: 1.15em; }
+.tracks article {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) 2.4fr;
+  gap: 0.5em 2.5rem;
+  padding-block: 1em;
+  border-block-start: 1px solid var(--rule);
+  scroll-margin-block-start: 1.25rem;
+  text-wrap: pretty;
+}
+h2 + article { border-block-start: 0; padding-block-start: 0; }
+
+/* The title stays in view while a long album's tracks scroll by. The track count lines up under the artist. */
+hgroup {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: 0.45em;
+}
+h3 {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: first baseline;
+  margin: 0;
+  font-size: 1em;
+  font-weight: 400;
+}
+h3 > a { color: var(--muted); padding-inline: 0.2em; }
+h3 > a:hover, h3 > a:focus-visible { color: var(--ink); }
+hgroup > p { grid-column: 2 / -1; margin: 0.2em 0 0; color: var(--muted); font-size: 0.82em; }
+
+/* Each track: its number, right-aligned in a column as wide as the album's longest ("2.12" with a disc), its
+   title and its time */
+.tracks ol { columns: 15rem 3; column-gap: 2rem; margin: 0; padding: 0; list-style: none; font-size: 0.9em; }
+.tracks li {
+  display: grid;
+  grid-template-columns: max(1.6em, var(--number-width, 0ch)) 1fr auto;
+  column-gap: 0.45em;
+  align-items: first baseline;
+  padding-block-end: 0.18em;
+  break-inside: avoid;
+}
+.tracks li > span { justify-self: end; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* The album the list jumped to, tinted */
+.tracks article:target { background: var(--tint); box-shadow: 0 0 0 0.5em var(--tint); border-radius: 0.15em; }
+
+/* On a narrow screen, the tracks go below the title */
+@media (max-width: 40rem) {
+  .tracks article { grid-template-columns: 1fr; }
+  hgroup { position: static; }
+}
 </style>
 </head>
 <body>
 <main>
-  <header>
-    <h1>Tecsun Playlist</h1>
-    <p>October 31, 2026 · 35 albums</p>
-  </header>
-  <ol>
-    <li><span class="number">01</span><span><span class="artist">Aphex Twin</span>&nbsp;– Drukqs</span></li>
-    <li><span class="number">02</span><span><span class="artist">The Beach Boys</span>&nbsp;– Pet Sounds</span></li>
-    <li><span class="number">03</span><span><span class="artist">The Beatles</span>&nbsp;– Abbey Road</span></li>
-    <li><span class="number">04</span><span><span class="artist">Beck</span>&nbsp;– Mellow Gold</span></li>
-    <li><span class="number">05</span><span><span class="artist">The Books</span>&nbsp;– The Lemon of Pink</span></li>
-    <li><span class="number">06</span><span><span class="artist">John Coltrane</span>&nbsp;– My Favorite Things</span></li>
-    <li><span class="number">07</span><span><span class="artist">Cypress Hill</span>&nbsp;– Cypress Hill</span></li>
-    <li><span class="number">08</span><span><span class="artist">De La Soul</span>&nbsp;– Stakes Is High</span></li>
-    <li><span class="number">09</span><span><span class="artist">Bob Dylan</span>&nbsp;– Blood on the Tracks</span></li>
-    <li><span class="number">10</span><span><span class="artist">Bob Dylan</span>&nbsp;– Highway 61 Revisited</span></li>
-    <li><span class="number">11</span><span><span class="artist">First Aid Kit</span>&nbsp;– The Lion's Roar</span></li>
-    <li><span class="number">12</span><span><span class="artist">Huey Lewis and The News</span>&nbsp;– Sports</span></li>
-    <li><span class="number">13</span><span><span class="artist">Ice Cube</span>&nbsp;– Lethal Injection</span></li>
-    <li><span class="number">14</span><span><span class="artist">Led Zeppelin</span>&nbsp;– III</span></li>
-    <li><span class="number">15</span><span><span class="artist">Led Zeppelin</span>&nbsp;– IV</span></li>
-    <li><span class="number">16</span><span><span class="artist">MF DOOM</span>&nbsp;– Operation Doomsday</span></li>
-    <li><span class="number">17</span><span><span class="artist">MF DOOM</span>&nbsp;– Vaudeville Villain</span></li>
-    <li><span class="number">18</span><span><span class="artist">Modest Mouse</span>&nbsp;– The Lonesome Crowded West</span></li>
-    <li><span class="number">19</span><span><span class="artist">Joanna Newsom</span>&nbsp;– The Milk-Eyed Mender</span></li>
-    <li><span class="number">20</span><span><span class="artist">Nine Inch Nails</span>&nbsp;– The Downward Spiral</span></li>
-    <li><span class="number">21</span><span><span class="artist">Nirvana</span>&nbsp;– Nevermind</span></li>
-    <li><span class="number">22</span><span><span class="artist">Pink Floyd</span>&nbsp;– The Dark Side of the Moon</span></li>
-    <li><span class="number">23</span><span><span class="artist">Pink Floyd</span>&nbsp;– The Wall</span></li>
-    <li><span class="number">24</span><span><span class="artist">Radiohead</span>&nbsp;– OK Computer</span></li>
-    <li><span class="number">25</span><span><span class="artist">Radiohead</span>&nbsp;– The Bends</span></li>
-    <li><span class="number">26</span><span><span class="artist">The Rentals</span>&nbsp;– Return of The Rentals</span></li>
-    <li><span class="number">27</span><span><span class="artist">Rolling Stones</span>&nbsp;– Exile On Main St</span></li>
-    <li><span class="number">28</span><span><span class="artist">Smashing Pumpkins</span>&nbsp;– Mellon Collie and the Infinite Sadness</span></li>
-    <li><span class="number">29</span><span><span class="artist">Snoop Dogg</span>&nbsp;– Doggystyle</span></li>
-    <li><span class="number">30</span><span><span class="artist">A Tribe Called Quest</span>&nbsp;– People's Instinctive Travels and the Paths of Rhythm</span></li>
-    <li><span class="number">31</span><span><span class="artist">A Tribe Called Quest</span>&nbsp;– The Low End Theory</span></li>
-    <li><span class="number">32</span><span><span class="artist">The Velvet Underground &amp; Nico</span>&nbsp;– The Banana Album</span></li>
-    <li><span class="number">33</span><span><span class="artist">Weezer</span>&nbsp;– Blue Album</span></li>
-    <li><span class="number">34</span><span><span class="artist">Wu-Tang Clan</span>&nbsp;– Enter the Wu-Tang (36 Chambers)</span></li>
-    <li><span class="number">35</span><span><span class="artist">Sam Harris</span>&nbsp;– Waking Up</span></li>
-  </ol>
+  <div class="page-one">
+    <header>
+      <h1>Tecsun Playlist</h1>
+      <p>November 2, 2026 · 38 albums</p>
+    </header>
+    <ol class="albums">
+      <li><a href="#album-01"><span class="number">01</span><span><b>Aphex Twin</b>&nbsp;– <cite>Drukqs</cite></span></a></li>
+      <li><a href="#album-02"><span class="number">02</span><span><b>The Beach Boys</b>&nbsp;– <cite>Pet Sounds</cite></span></a></li>
+      <li><a href="#album-03"><span class="number">03</span><span><b>The Beatles</b>&nbsp;– <cite>Abbey Road</cite></span></a></li>
+      <li><a href="#album-04"><span class="number">04</span><span><b>Beck</b>&nbsp;– <cite>Mellow Gold</cite></span></a></li>
+      <li><a href="#album-05"><span class="number">05</span><span><b>The Books</b>&nbsp;– <cite>The Lemon of Pink</cite></span></a></li>
+      <li><a href="#album-06"><span class="number">06</span><span><b>Johnny Cash</b>&nbsp;– <cite>At Folsom Prison</cite></span></a></li>
+      <li><a href="#album-07"><span class="number">07</span><span><b>John Coltrane</b>&nbsp;– <cite>My Favorite Things</cite></span></a></li>
+      <li><a href="#album-08"><span class="number">08</span><span><b>Cypress Hill</b>&nbsp;– <cite>Cypress Hill</cite></span></a></li>
+      <li><a href="#album-09"><span class="number">09</span><span><b>De La Soul</b>&nbsp;– <cite>Stakes Is High</cite></span></a></li>
+      <li><a href="#album-10"><span class="number">10</span><span><b>Bob Dylan</b>&nbsp;– <cite>Blood on the Tracks</cite></span></a></li>
+      <li><a href="#album-11"><span class="number">11</span><span><b>Bob Dylan</b>&nbsp;– <cite>Highway 61 Revisited</cite></span></a></li>
+      <li><a href="#album-12"><span class="number">12</span><span><b>First Aid Kit</b>&nbsp;– <cite>The Lion's Roar</cite></span></a></li>
+      <li><a href="#album-13"><span class="number">13</span><span><b>Huey Lewis and The News</b>&nbsp;– <cite>Sports</cite></span></a></li>
+      <li><a href="#album-14"><span class="number">14</span><span><b>Ice Cube</b>&nbsp;– <cite>Lethal Injection</cite></span></a></li>
+      <li><a href="#album-15"><span class="number">15</span><span><b>Waylon Jennings</b>&nbsp;– <cite>Honky Tonk Heroes</cite></span></a></li>
+      <li><a href="#album-16"><span class="number">16</span><span><b>Led Zeppelin</b>&nbsp;– <cite>III</cite></span></a></li>
+      <li><a href="#album-17"><span class="number">17</span><span><b>Led Zeppelin</b>&nbsp;– <cite>IV</cite></span></a></li>
+      <li><a href="#album-18"><span class="number">18</span><span><b>Loretta Lynn</b>&nbsp;– <cite>Writes 'Em And Sings 'Em</cite></span></a></li>
+      <li><a href="#album-19"><span class="number">19</span><span><b>MF DOOM</b>&nbsp;– <cite>Operation Doomsday</cite></span></a></li>
+      <li><a href="#album-20"><span class="number">20</span><span><b>MF DOOM</b>&nbsp;– <cite>Vaudeville Villain</cite></span></a></li>
+      <li><a href="#album-21"><span class="number">21</span><span><b>Modest Mouse</b>&nbsp;– <cite>The Lonesome Crowded West</cite></span></a></li>
+      <li><a href="#album-22"><span class="number">22</span><span><b>Joanna Newsom</b>&nbsp;– <cite>The Milk-Eyed Mender</cite></span></a></li>
+      <li><a href="#album-23"><span class="number">23</span><span><b>Nine Inch Nails</b>&nbsp;– <cite>The Downward Spiral</cite></span></a></li>
+      <li><a href="#album-24"><span class="number">24</span><span><b>Nirvana</b>&nbsp;– <cite>Nevermind</cite></span></a></li>
+      <li><a href="#album-25"><span class="number">25</span><span><b>Pink Floyd</b>&nbsp;– <cite>The Dark Side of the Moon</cite></span></a></li>
+      <li><a href="#album-26"><span class="number">26</span><span><b>Pink Floyd</b>&nbsp;– <cite>The Wall</cite></span></a></li>
+      <li><a href="#album-27"><span class="number">27</span><span><b>Radiohead</b>&nbsp;– <cite>OK Computer</cite></span></a></li>
+      <li><a href="#album-28"><span class="number">28</span><span><b>Radiohead</b>&nbsp;– <cite>The Bends</cite></span></a></li>
+      <li><a href="#album-29"><span class="number">29</span><span><b>The Rentals</b>&nbsp;– <cite>Return of The Rentals</cite></span></a></li>
+      <li><a href="#album-30"><span class="number">30</span><span><b>Rolling Stones</b>&nbsp;– <cite>Exile On Main St</cite></span></a></li>
+      <li><a href="#album-31"><span class="number">31</span><span><b>Smashing Pumpkins</b>&nbsp;– <cite>Mellon Collie and the Infinite Sadness</cite></span></a></li>
+      <li><a href="#album-32"><span class="number">32</span><span><b>Snoop Dogg</b>&nbsp;– <cite>Doggystyle</cite></span></a></li>
+      <li><a href="#album-33"><span class="number">33</span><span><b>A Tribe Called Quest</b>&nbsp;– <cite>People's Instinctive Travels and the Paths of Rhythm</cite></span></a></li>
+      <li><a href="#album-34"><span class="number">34</span><span><b>A Tribe Called Quest</b>&nbsp;– <cite>The Low End Theory</cite></span></a></li>
+      <li><a href="#album-35"><span class="number">35</span><span><b>The Velvet Underground &amp; Nico</b>&nbsp;– <cite>The Banana Album</cite></span></a></li>
+      <li><a href="#album-36"><span class="number">36</span><span><b>Weezer</b>&nbsp;– <cite>Blue Album</cite></span></a></li>
+      <li><a href="#album-37"><span class="number">37</span><span><b>Wu-Tang Clan</b>&nbsp;– <cite>Enter the Wu-Tang (36 Chambers)</cite></span></a></li>
+      <li><a href="#album-38"><span class="number">38</span><span><b>Sam Harris</b>&nbsp;– <cite>Waking Up</cite></span></a></li>
+    </ol>
+  </div>
+  <section class="tracks">
+    <h2>Tracks</h2>
+    <article id="album-01">
+      <hgroup>
+        <h3><span class="number">01</span><span><b>Aphex Twin</b>&nbsp;– <cite>Drukqs</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>30 tracks · 1:40:51</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Jynweythek<span>2:24</span></li>
+        <li><span>2</span>Vordhosbn<span>4:51</span></li>
+        <li><span>3</span>Kladfvgbung Mischk<span>2:07</span></li>
+        <li><span>4</span>Omgyjya-Switch7<span>4:52</span></li>
+        <li><span>5</span>Strotha Tynhe<span>2:12</span></li>
+        <li><span>6</span>Gwely Mernans<span>5:08</span></li>
+        <li><span>7</span>Bbydhyonchord<span>2:33</span></li>
+        <li><span>8</span>Cock-ver10<span>5:18</span></li>
+        <li><span>9</span>Avril 14th<span>2:06</span></li>
+        <li><span>10</span>Mt Saint Michel + Saint Michaels Mount<span>8:10</span></li>
+        <li><span>11</span>Gwarek2<span>6:47</span></li>
+        <li><span>12</span>Orban Eq Trx 4<span>1:35</span></li>
+        <li><span>13</span>Aussois<span>0:13</span></li>
+        <li><span>14</span>Hy A Scullyas Lyf Adhagrow<span>2:15</span></li>
+        <li><span>15</span>Kesson Dalek<span>1:21</span></li>
+        <li><span>16</span>54 Cymru Beats<span>6:07</span></li>
+        <li><span>17</span>Btoum-Roumada<span>1:58</span></li>
+        <li><span>18</span>Lornaderek<span>0:31</span></li>
+        <li><span>19</span>QKThr<span>1:27</span></li>
+        <li><span>20</span>Meltphace 6<span>6:24</span></li>
+        <li><span>21</span>Bit 4<span>0:25</span></li>
+        <li><span>22</span>Prep Gwarek 36<span>1:19</span></li>
+        <li><span>23</span>Father<span>0:57</span></li>
+        <li><span>24</span>Taking Control<span>7:14</span></li>
+        <li><span>25</span>Petiatil Cx Htdui<span>2:11</span></li>
+        <li><span>26</span>Ruglen Holon<span>1:49</span></li>
+        <li><span>27</span>Afx237 v.7<span>4:23</span></li>
+        <li><span>28</span>Ziggomatic 17<span>8:35</span></li>
+        <li><span>29</span>Beskhu3epnm<span>2:10</span></li>
+        <li><span>30</span>Nanou2<span>3:25</span></li>
+      </ol>
+    </article>
+    <article id="album-02">
+      <hgroup>
+        <h3><span class="number">02</span><span><b>The Beach Boys</b>&nbsp;– <cite>Pet Sounds</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>13 tracks · 36:32</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Wouldn't it Be Nice<span>2:26</span></li>
+        <li><span>2</span>You Still Believe Me<span>2:32</span></li>
+        <li><span>3</span>That's Not Me<span>2:30</span></li>
+        <li><span>4</span>Don't Talk (Put Your Head on My Shoulder)<span>2:53</span></li>
+        <li><span>5</span>I'm Waiting for the Day<span>3:06</span></li>
+        <li><span>6</span>Let's Go Away for Awhile<span>2:21</span></li>
+        <li><span>7</span>Sloop John B<span>3:07</span></li>
+        <li><span>8</span>God Only Knows<span>2:52</span></li>
+        <li><span>9</span>I Know There's an Answer<span>3:11</span></li>
+        <li><span>10</span>Here Today<span>2:55</span></li>
+        <li><span>11</span>I Just Wasn't Made for These Times<span>3:14</span></li>
+        <li><span>12</span>Pet Sounds<span>2:24</span></li>
+        <li><span>13</span>Caroline, No<span>3:02</span></li>
+      </ol>
+    </article>
+    <article id="album-03">
+      <hgroup>
+        <h3><span class="number">03</span><span><b>The Beatles</b>&nbsp;– <cite>Abbey Road</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>17 tracks · 47:30</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Come Together<span>4:20</span></li>
+        <li><span>2</span>Something<span>3:02</span></li>
+        <li><span>3</span>Maxwell's Silver Hammer<span>3:28</span></li>
+        <li><span>4</span>Oh! Darling<span>3:27</span></li>
+        <li><span>5</span>Octopus's Garden<span>2:51</span></li>
+        <li><span>6</span>I Want You (She's So Heavy)<span>7:47</span></li>
+        <li><span>7</span>Here Comes the Sun<span>3:06</span></li>
+        <li><span>8</span>Because<span>2:46</span></li>
+        <li><span>9</span>You Never Give Me Your Money<span>4:03</span></li>
+        <li><span>10</span>Sun King<span>2:26</span></li>
+        <li><span>11</span>Mean Mr. Mustard<span>1:07</span></li>
+        <li><span>12</span>Polythene Pam<span>1:13</span></li>
+        <li><span>13</span>She Came in Through the Bathroom Window<span>1:59</span></li>
+        <li><span>14</span>Golden Slumbers<span>1:32</span></li>
+        <li><span>15</span>Carry That Weight<span>1:36</span></li>
+        <li><span>16</span>The End<span>2:22</span></li>
+        <li><span>17</span>Her Majesty<span>0:26</span></li>
+      </ol>
+    </article>
+    <article id="album-04">
+      <hgroup>
+        <h3><span class="number">04</span><span><b>Beck</b>&nbsp;– <cite>Mellow Gold</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>12 tracks · 47:37</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Loser<span>3:55</span></li>
+        <li><span>2</span>Pay No Mind (Snoozer)<span>3:15</span></li>
+        <li><span>3</span>Fuckin With My Head (Mountain Dew Rock)<span>3:41</span></li>
+        <li><span>4</span>Whiskeyclone, Hotel City 1997<span>3:28</span></li>
+        <li><span>5</span>Soul Suckin Jerk<span>3:57</span></li>
+        <li><span>6</span>Truckdrivin Neighbors Downstairs (Yellow Sweat)<span>2:55</span></li>
+        <li><span>7</span>Sweet Sunshine<span>4:18</span></li>
+        <li><span>8</span>Beercan<span>4:01</span></li>
+        <li><span>9</span>Steal My Body Home<span>5:34</span></li>
+        <li><span>10</span>Nitemare Hippy Girl<span>2:55</span></li>
+        <li><span>11</span>Mutherfuker<span>2:05</span></li>
+        <li><span>12</span>Blackhole (Analog Odyssey)<span>7:33</span></li>
+      </ol>
+    </article>
+    <article id="album-05">
+      <hgroup>
+        <h3><span class="number">05</span><span><b>The Books</b>&nbsp;– <cite>The Lemon of Pink</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>13 tracks · 37:31</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>The Lemon of Pink<span>4:40</span></li>
+        <li><span>2</span>The Lemon of Pink<span>1:35</span></li>
+        <li><span>3</span>Tokyo<span>3:43</span></li>
+        <li><span>4</span>Bonanza<span>0:53</span></li>
+        <li><span>5</span>S Is for Evrysing<span>3:32</span></li>
+        <li><span>6</span>Explanation Mark<span>0:20</span></li>
+        <li><span>7</span>There Is No There<span>3:37</span></li>
+        <li><span>8</span>Take Time<span>3:37</span></li>
+        <li><span>9</span>Don't Even Sing About It<span>4:10</span></li>
+        <li><span>10</span>The Future, Wouldn't That Be Nice<span>3:16</span></li>
+        <li><span>11</span>A True Story of a Story of True Love<span>4:25</span></li>
+        <li><span>12</span>That Right Ain't Shit<span>2:48</span></li>
+        <li><span>13</span>PS<span>0:56</span></li>
+      </ol>
+    </article>
+    <article id="album-06">
+      <hgroup>
+        <h3><span class="number">06</span><span><b>Johnny Cash</b>&nbsp;– <cite>At Folsom Prison</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>19 tracks · 55:50</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Folsom Prison Blues<span>2:42</span></li>
+        <li><span>2</span>Busted<span>1:25</span></li>
+        <li><span>3</span>Dark As The Dungeon<span>3:05</span></li>
+        <li><span>4</span>I Still Miss Someone<span>1:38</span></li>
+        <li><span>5</span>Cocaine Blues<span>3:01</span></li>
+        <li><span>6</span>25 Minutes To Go<span>3:31</span></li>
+        <li><span>7</span>Orange Blossom Special<span>3:01</span></li>
+        <li><span>8</span>The Long Black Veil<span>3:58</span></li>
+        <li><span>9</span>Send A Picture Of Mother<span>2:10</span></li>
+        <li><span>10</span>The Wall<span>1:37</span></li>
+        <li><span>11</span>Dirty Old Egg-Suckin' Dog<span>1:30</span></li>
+        <li><span>12</span>Flushed From The Bathroom Of Your Heart<span>2:17</span></li>
+        <li><span>13</span>Joe Bean<span>2:25</span></li>
+        <li><span>14</span>Jackson (With June Carter)<span>3:12</span></li>
+        <li><span>15</span>Give My Love To Rose (With June Carter)<span>2:41</span></li>
+        <li><span>16</span>I Got Stripes<span>1:57</span></li>
+        <li><span>17</span>The Legend Of John Henry's Hammer<span>7:08</span></li>
+        <li><span>18</span>Green, Green Grass Of Home<span>2:29</span></li>
+        <li><span>19</span>Greystone Chapel<span>6:02</span></li>
+      </ol>
+    </article>
+    <article id="album-07">
+      <hgroup>
+        <h3><span class="number">07</span><span><b>John Coltrane</b>&nbsp;– <cite>My Favorite Things</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>4 tracks · 40:54</p>
+      </hgroup>
+      <ol style="--number-width: 1ch">
+        <li><span>1</span>My Favorite Things<span>13:50</span></li>
+        <li><span>2</span>Everytime We Say Goodbye<span>5:43</span></li>
+        <li><span>3</span>Summertime<span>11:39</span></li>
+        <li><span>4</span>But Not For Me<span>9:43</span></li>
+      </ol>
+    </article>
+    <article id="album-08">
+      <hgroup>
+        <h3><span class="number">08</span><span><b>Cypress Hill</b>&nbsp;– <cite>Cypress Hill</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>16 tracks · 46:51</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Pigs<span>2:47</span></li>
+        <li><span>2</span>How I Could Just Kill a Man<span>4:12</span></li>
+        <li><span>3</span>Hand on the Pump<span>4:03</span></li>
+        <li><span>4</span>Hole in the Head<span>3:34</span></li>
+        <li><span>5</span>Ultraviolet Dreams<span>0:42</span></li>
+        <li><span>6</span>Light Another<span>3:17</span></li>
+        <li><span>7</span>The Phuncky Feel One<span>3:29</span></li>
+        <li><span>8</span>Break It Up<span>1:07</span></li>
+        <li><span>9</span>Real Estate<span>3:45</span></li>
+        <li><span>10</span>Stoned Is the Way of the Walk<span>2:46</span></li>
+        <li><span>11</span>Psycobetabuckdown<span>2:59</span></li>
+        <li><span>12</span>Something for the Blunted<span>1:15</span></li>
+        <li><span>13</span>Latin Lingo<span>3:59</span></li>
+        <li><span>14</span>The Funky Cypress Hill Shit<span>4:01</span></li>
+        <li><span>15</span>Tres equis<span>1:55</span></li>
+        <li><span>16</span>Born to Get Busy<span>3:00</span></li>
+      </ol>
+    </article>
+    <article id="album-09">
+      <hgroup>
+        <h3><span class="number">09</span><span><b>De La Soul</b>&nbsp;– <cite>Stakes Is High</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>18 tracks · 1:08:13</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Intro<span>2:35</span></li>
+        <li><span>2</span>Supa Emcees<span>3:40</span></li>
+        <li><span>3</span>The Bizness<span>4:22</span></li>
+        <li><span>4</span>Yunonstop<span>1:17</span></li>
+        <li><span>5</span>Wonce Again Long Island<span>3:39</span></li>
+        <li><span>6</span>Dinninit<span>4:21</span></li>
+        <li><span>7</span>Brakes<span>4:07</span></li>
+        <li><span>8</span>Dog Eat Dog<span>3:39</span></li>
+        <li><span>9</span>Baby, Baby, Baby, Baby, Ooh Baby<span>2:08</span></li>
+        <li><span>10</span>Long Island Degrees<span>3:27</span></li>
+        <li><span>11</span>Betta Listen<span>4:28</span></li>
+        <li><span>12</span>Itzsoweezee (HOT)<span>4:48</span></li>
+        <li><span>13</span>4 More<span>4:18</span></li>
+        <li><span>14</span>Big Brother Beat<span>3:43</span></li>
+        <li><span>15</span>Down Syndrome<span>3:04</span></li>
+        <li><span>16</span>Pony Ride<span>5:27</span></li>
+        <li><span>17</span>Stakes Is High<span>5:31</span></li>
+        <li><span>18</span>Sunshine<span>3:38</span></li>
+      </ol>
+    </article>
+    <article id="album-10">
+      <hgroup>
+        <h3><span class="number">10</span><span><b>Bob Dylan</b>&nbsp;– <cite>Blood on the Tracks</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>10 tracks · 51:36</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Tangled Up in Blue<span>5:42</span></li>
+        <li><span>2</span>Simple Twist of Fate<span>4:17</span></li>
+        <li><span>3</span>You’re a Big Girl Now<span>4:32</span></li>
+        <li><span>4</span>Idiot Wind<span>7:47</span></li>
+        <li><span>5</span>You’re Gonna Make Me Lonesome When You Go<span>2:55</span></li>
+        <li><span>6</span>Meet Me in the Morning<span>4:19</span></li>
+        <li><span>7</span>Lily, Rosemary and the Jack of Hearts<span>8:51</span></li>
+        <li><span>8</span>If You See Her, Say Hello<span>4:48</span></li>
+        <li><span>9</span>Shelter From the Storm<span>5:01</span></li>
+        <li><span>10</span>Buckets of Rain<span>3:24</span></li>
+      </ol>
+    </article>
+    <article id="album-11">
+      <hgroup>
+        <h3><span class="number">11</span><span><b>Bob Dylan</b>&nbsp;– <cite>Highway 61 Revisited</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>9 tracks · 51:32</p>
+      </hgroup>
+      <ol style="--number-width: 1ch">
+        <li><span>1</span>Like a Rolling Stone<span>6:13</span></li>
+        <li><span>2</span>Tombstone Blues<span>5:58</span></li>
+        <li><span>3</span>It Takes a Lot to Laugh, It Takes a Train to Cry<span>4:09</span></li>
+        <li><span>4</span>From a Buick 6<span>3:19</span></li>
+        <li><span>5</span>Ballad of a Thin Man<span>5:59</span></li>
+        <li><span>6</span>Queen Jane Approximately<span>5:31</span></li>
+        <li><span>7</span>Highway 61 Revisited<span>3:30</span></li>
+        <li><span>8</span>Just Like Tom Thumb's Blues<span>5:32</span></li>
+        <li><span>9</span>Desolation Row<span>11:20</span></li>
+      </ol>
+    </article>
+    <article id="album-12">
+      <hgroup>
+        <h3><span class="number">12</span><span><b>First Aid Kit</b>&nbsp;– <cite>The Lion's Roar</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>13 tracks · 53:40</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>The Lion's Roar<span>5:07</span></li>
+        <li><span>2</span>Emmylou<span>4:18</span></li>
+        <li><span>3</span>In The Hearts of Men<span>4:13</span></li>
+        <li><span>4</span>Blue<span>3:12</span></li>
+        <li><span>5</span>This Old Routine<span>4:24</span></li>
+        <li><span>6</span>To a Poet<span>5:44</span></li>
+        <li><span>7</span>I Found a Way<span>4:13</span></li>
+        <li><span>8</span>Dance to Another Tune<span>4:50</span></li>
+        <li><span>9</span>New Year's Eve<span>3:07</span></li>
+        <li><span>10</span>King of the World<span>3:43</span></li>
+        <li><span>11</span>Wolf<span>3:40</span></li>
+        <li><span>12</span>Marianne's Son<span>3:36</span></li>
+        <li><span>13</span>I Just Needed a Friend<span>3:31</span></li>
+      </ol>
+    </article>
+    <article id="album-13">
+      <hgroup>
+        <h3><span class="number">13</span><span><b>Huey Lewis and The News</b>&nbsp;– <cite>Sports</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>9 tracks · 37:49</p>
+      </hgroup>
+      <ol style="--number-width: 1ch">
+        <li><span>1</span>The Heart of Rock &amp; Roll<span>5:04</span></li>
+        <li><span>2</span>Heart and Soul<span>4:14</span></li>
+        <li><span>3</span>Bad Is Bad<span>3:49</span></li>
+        <li><span>4</span>I Want a New Drug<span>4:46</span></li>
+        <li><span>5</span>Walking on a Thin Line<span>5:12</span></li>
+        <li><span>6</span>Finally Found a Home<span>3:44</span></li>
+        <li><span>7</span>If This Is It<span>3:54</span></li>
+        <li><span>8</span>You Crack Me Up<span>3:43</span></li>
+        <li><span>9</span>Honky Tonk Blues<span>3:23</span></li>
+      </ol>
+    </article>
+    <article id="album-14">
+      <hgroup>
+        <h3><span class="number">14</span><span><b>Ice Cube</b>&nbsp;– <cite>Lethal Injection</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>12 tracks · 56:22</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>The Shot (intro)<span>0:55</span></li>
+        <li><span>2</span>Really Doe<span>4:28</span></li>
+        <li><span>3</span>Ghetto Bird<span>3:51</span></li>
+        <li><span>4</span>You Know How We Do It<span>3:53</span></li>
+        <li><span>5</span>Cave Bitch<span>4:18</span></li>
+        <li><span>6</span>Bop Gun (One Nation)<span>11:17</span></li>
+        <li><span>7</span>What Can I Do<span>4:39</span></li>
+        <li><span>8</span>Lil Ass Gee<span>4:04</span></li>
+        <li><span>9</span>Make It Ruff, Make It Smooth<span>4:23</span></li>
+        <li><span>10</span>Down for Whatever<span>4:40</span></li>
+        <li><span>11</span>Enemy<span>4:50</span></li>
+        <li><span>12</span>When I Get to Heaven<span>5:04</span></li>
+      </ol>
+    </article>
+    <article id="album-15">
+      <hgroup>
+        <h3><span class="number">15</span><span><b>Waylon Jennings</b>&nbsp;– <cite>Honky Tonk Heroes</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>10 tracks · 27:10</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Honky Tonk Heroes<span>3:36</span></li>
+        <li><span>2</span>Old Five and Dimers (Like Me)<span>3:06</span></li>
+        <li><span>3</span>Willy the Wandering Gypsy and Me<span>3:03</span></li>
+        <li><span>4</span>Low Down Freedom<span>2:21</span></li>
+        <li><span>5</span>Omaha<span>2:38</span></li>
+        <li><span>6</span>You Ask Me To<span>2:32</span></li>
+        <li><span>7</span>Ride Me Down Easy<span>2:39</span></li>
+        <li><span>8</span>Ain’t No God in Mexico<span>2:01</span></li>
+        <li><span>9</span>Black Rose<span>2:28</span></li>
+        <li><span>10</span>We Had It All<span>2:45</span></li>
+      </ol>
+    </article>
+    <article id="album-16">
+      <hgroup>
+        <h3><span class="number">16</span><span><b>Led Zeppelin</b>&nbsp;– <cite>III</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>10 tracks · 43:08</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Immigrant Song<span>2:26</span></li>
+        <li><span>2</span>Friends<span>3:54</span></li>
+        <li><span>3</span>Celebration Day<span>3:30</span></li>
+        <li><span>4</span>Since I've Been Loving You<span>7:24</span></li>
+        <li><span>5</span>Out on the Tiles<span>4:07</span></li>
+        <li><span>6</span>Gallows Pole<span>4:58</span></li>
+        <li><span>7</span>Tangerine<span>3:12</span></li>
+        <li><span>8</span>That's the Way<span>5:37</span></li>
+        <li><span>9</span>Bron-Y-Aur Stomp<span>4:17</span></li>
+        <li><span>10</span>Hats off To (Roy) Harper<span>3:42</span></li>
+      </ol>
+    </article>
+    <article id="album-17">
+      <hgroup>
+        <h3><span class="number">17</span><span><b>Led Zeppelin</b>&nbsp;– <cite>IV</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>8 tracks · 42:39</p>
+      </hgroup>
+      <ol style="--number-width: 1ch">
+        <li><span>1</span>Black Dog<span>4:56</span></li>
+        <li><span>2</span>Rock and Roll<span>3:41</span></li>
+        <li><span>3</span>The Battle of Evermore<span>5:52</span></li>
+        <li><span>4</span>Stairway to Heaven<span>8:03</span></li>
+        <li><span>5</span>Misty Mountain Hop<span>4:39</span></li>
+        <li><span>6</span>Four Sticks<span>4:45</span></li>
+        <li><span>7</span>Going to California<span>3:32</span></li>
+        <li><span>8</span>When the Levee Breaks<span>7:11</span></li>
+      </ol>
+    </article>
+    <article id="album-18">
+      <hgroup>
+        <h3><span class="number">18</span><span><b>Loretta Lynn</b>&nbsp;– <cite>Writes 'Em And Sings 'Em</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>11 tracks · 26:44</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>I Know How<span>2:33</span></li>
+        <li><span>2</span>What's The Bottle Done To My Baby<span>2:42</span></li>
+        <li><span>3</span>The One You Need<span>2:21</span></li>
+        <li><span>4</span>Your Squaw Is On The Warpath<span>2:03</span></li>
+        <li><span>5</span>You Ain't Woman Enough<span>2:12</span></li>
+        <li><span>6</span>Crazy Out Of My Mind<span>2:42</span></li>
+        <li><span>7</span>You Wanna Give Me A Lift<span>2:32</span></li>
+        <li><span>8</span>Wings Upon Your Horns<span>2:37</span></li>
+        <li><span>9</span>To Make You Feel Like A Man<span>2:17</span></li>
+        <li><span>10</span>Deep As Your Pocket<span>2:35</span></li>
+        <li><span>11</span>Fist City<span>2:10</span></li>
+      </ol>
+    </article>
+    <article id="album-19">
+      <hgroup>
+        <h3><span class="number">19</span><span><b>MF DOOM</b>&nbsp;– <cite>Operation Doomsday</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>19 tracks · 58:06</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>The Time We Faced Doom (skit)<span>2:04</span></li>
+        <li><span>2</span>Doomsday<span>4:58</span></li>
+        <li><span>3</span>Rhymes Like Dimes<span>4:19</span></li>
+        <li><span>4</span>The Finest<span>4:01</span></li>
+        <li><span>5</span>Back in the Days (skit)<span>0:45</span></li>
+        <li><span>6</span>Go With the Flow<span>3:37</span></li>
+        <li><span>7</span>Tick, Tick<span>4:05</span></li>
+        <li><span>8</span>Red and Gold<span>4:43</span></li>
+        <li><span>9</span>The Hands of Doom (skit)<span>1:50</span></li>
+        <li><span>10</span>Who You Think I Am<span>3:24</span></li>
+        <li><span>11</span>Doom, Are You Awake! (skit)<span>1:13</span></li>
+        <li><span>12</span>Hey!<span>3:47</span></li>
+        <li><span>13</span>Operation - Greenbacks<span>3:46</span></li>
+        <li><span>14</span>The M.I.C<span>3:02</span></li>
+        <li><span>15</span>The Mystery of Doom (skit)<span>0:22</span></li>
+        <li><span>16</span>Dead Bent<span>2:22</span></li>
+        <li><span>17</span>Gas Drawls<span>3:43</span></li>
+        <li><span>18</span>_ (Feat Kurious)<span>3:09</span></li>
+        <li><span>19</span>Hero vs. Villain (Epilogue)<span>2:56</span></li>
+      </ol>
+    </article>
+    <article id="album-20">
+      <hgroup>
+        <h3><span class="number">20</span><span><b>MF DOOM</b>&nbsp;– <cite>Vaudeville Villain</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>17 tracks · 56:40</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Overture<span>0:35</span></li>
+        <li><span>2</span>Vaudeville Villain<span>2:32</span></li>
+        <li><span>3</span>Lickupon<span>2:44</span></li>
+        <li><span>4</span>The Drop<span>3:26</span></li>
+        <li><span>5</span>Lactose and Lecithin<span>2:35</span></li>
+        <li><span>6</span>A Dead Mouse<span>3:56</span></li>
+        <li><span>7</span>Open Mic Nite, Part 1<span>3:01</span></li>
+        <li><span>8</span>Raedawn<span>4:27</span></li>
+        <li><span>9</span>Let Me Watch<span>4:09</span></li>
+        <li><span>10</span>Saliva<span>2:29</span></li>
+        <li><span>11</span>Modern Day Mugging<span>2:44</span></li>
+        <li><span>12</span>Open Mic Nite, Part 2<span>3:13</span></li>
+        <li><span>13</span>Never Dead<span>3:27</span></li>
+        <li><span>14</span>Popsnot<span>4:39</span></li>
+        <li><span>15</span>Mr. Clean<span>2:14</span></li>
+        <li><span>16</span>G.M.C.<span>3:33</span></li>
+        <li><span>17</span>Change the Beat<span>6:55</span></li>
+      </ol>
+    </article>
+    <article id="album-21">
+      <hgroup>
+        <h3><span class="number">21</span><span><b>Modest Mouse</b>&nbsp;– <cite>The Lonesome Crowded West</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>15 tracks · 1:13:59</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Teeth Like God's Shoeshine<span>6:53</span></li>
+        <li><span>2</span>Heart Cooks Brain<span>4:03</span></li>
+        <li><span>3</span>Convenient Parking<span>4:08</span></li>
+        <li><span>4</span>Lounge (Closing Time)<span>7:04</span></li>
+        <li><span>5</span>Jesus Christ Was an Only Child<span>2:36</span></li>
+        <li><span>6</span>Doin' the Cockroach<span>4:19</span></li>
+        <li><span>7</span>Cowboy Dan<span>6:15</span></li>
+        <li><span>8</span>Trailer Trash<span>5:50</span></li>
+        <li><span>9</span>Out of Gas<span>2:31</span></li>
+        <li><span>10</span>Long Distance Drunk<span>3:43</span></li>
+        <li><span>11</span>Shit Luck<span>2:23</span></li>
+        <li><span>12</span>Truckers Atlas<span>10:58</span></li>
+        <li><span>13</span>Polar Opposites<span>3:30</span></li>
+        <li><span>14</span>Bankrupt on Selling<span>2:54</span></li>
+        <li><span>15</span>Styrofoam Boots (It's All Nice on Ice, Alright)<span>6:53</span></li>
+      </ol>
+    </article>
+    <article id="album-22">
+      <hgroup>
+        <h3><span class="number">22</span><span><b>Joanna Newsom</b>&nbsp;– <cite>The Milk-Eyed Mender</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>12 tracks · 52:11</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Bridges and Balloons<span>3:43</span></li>
+        <li><span>2</span>Sprout and the Bean<span>4:33</span></li>
+        <li><span>3</span>The Book of Right‐On<span>4:30</span></li>
+        <li><span>4</span>Sadie<span>6:02</span></li>
+        <li><span>5</span>Inflammatory Writ<span>2:51</span></li>
+        <li><span>6</span>This Side of the Blue<span>5:21</span></li>
+        <li><span>7</span>“En Gallop”<span>5:08</span></li>
+        <li><span>8</span>Cassiopeia<span>3:20</span></li>
+        <li><span>9</span>Peach, Plum, Pear<span>3:34</span></li>
+        <li><span>10</span>Swansea<span>5:06</span></li>
+        <li><span>11</span>Three Little Babes<span>3:43</span></li>
+        <li><span>12</span>Clam, Crab, Cockle, Cowrie<span>4:21</span></li>
+      </ol>
+    </article>
+    <article id="album-23">
+      <hgroup>
+        <h3><span class="number">23</span><span><b>Nine Inch Nails</b>&nbsp;– <cite>The Downward Spiral</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>14 tracks · 1:05:08</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Mr. Self Destruct<span>4:30</span></li>
+        <li><span>2</span>Piggy<span>4:25</span></li>
+        <li><span>3</span>Heresy<span>3:54</span></li>
+        <li><span>4</span>March Of The Pigs<span>2:59</span></li>
+        <li><span>5</span>Closer<span>6:13</span></li>
+        <li><span>6</span>Ruiner<span>4:59</span></li>
+        <li><span>7</span>The Becoming<span>5:32</span></li>
+        <li><span>8</span>I Do Not Want This<span>5:41</span></li>
+        <li><span>9</span>Big Man With A Gun<span>1:36</span></li>
+        <li><span>10</span>A Warm Place<span>3:23</span></li>
+        <li><span>11</span>Eraser<span>4:54</span></li>
+        <li><span>12</span>Reptile<span>6:52</span></li>
+        <li><span>13</span>The Downward Spiral<span>3:57</span></li>
+        <li><span>14</span>Hurt<span>6:14</span></li>
+      </ol>
+    </article>
+    <article id="album-24">
+      <hgroup>
+        <h3><span class="number">24</span><span><b>Nirvana</b>&nbsp;– <cite>Nevermind</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>13 tracks · 49:14</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Smells Like Teen Spirit<span>5:01</span></li>
+        <li><span>2</span>In Bloom<span>4:15</span></li>
+        <li><span>3</span>Come As You Are<span>3:39</span></li>
+        <li><span>4</span>Breed<span>3:03</span></li>
+        <li><span>5</span>Lithium<span>4:16</span></li>
+        <li><span>6</span>Polly<span>2:54</span></li>
+        <li><span>7</span>Territorial Pissings<span>2:23</span></li>
+        <li><span>8</span>Drain You<span>3:44</span></li>
+        <li><span>9</span>Lounge Act<span>2:37</span></li>
+        <li><span>10</span>Stay Away<span>3:32</span></li>
+        <li><span>11</span>On A Plain<span>3:14</span></li>
+        <li><span>12</span>Something In The Way<span>3:52</span></li>
+        <li><span>13</span>Endless, Nameless<span>6:44</span></li>
+      </ol>
+    </article>
+    <article id="album-25">
+      <hgroup>
+        <h3><span class="number">25</span><span><b>Pink Floyd</b>&nbsp;– <cite>The Dark Side of the Moon</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>10 tracks · 42:56</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Speak to Me<span>1:11</span></li>
+        <li><span>2</span>Breathe (in the Air)<span>2:46</span></li>
+        <li><span>3</span>On the Run<span>3:34</span></li>
+        <li><span>4</span>Time<span>7:06</span></li>
+        <li><span>5</span>The Great Gig in the Sky<span>4:44</span></li>
+        <li><span>6</span>Money<span>6:22</span></li>
+        <li><span>7</span>Us and Them<span>7:50</span></li>
+        <li><span>8</span>Any Colour You Like<span>3:26</span></li>
+        <li><span>9</span>Brain Damage<span>3:50</span></li>
+        <li><span>10</span>Eclipse<span>2:07</span></li>
+      </ol>
+    </article>
+    <article id="album-26">
+      <hgroup>
+        <h3><span class="number">26</span><span><b>Pink Floyd</b>&nbsp;– <cite>The Wall</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>26 tracks · 1:21:26</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>In The Flesh<span>3:20</span></li>
+        <li><span>2</span>The Thin Ice<span>2:30</span></li>
+        <li><span>3</span>Another Brick In The Wall, Part 1<span>3:10</span></li>
+        <li><span>4</span>The Happiest Days Of Our Lives<span>1:51</span></li>
+        <li><span>5</span>Another Brick In The Wall, Part 2<span>4:00</span></li>
+        <li><span>6</span>Mother<span>5:37</span></li>
+        <li><span>7</span>Goodbye Blue Sky<span>2:48</span></li>
+        <li><span>8</span>Empty Spaces<span>2:08</span></li>
+        <li><span>9</span>Young Lust<span>3:31</span></li>
+        <li><span>10</span>One Of My Turns<span>3:38</span></li>
+        <li><span>11</span>Don't Leave Me Now<span>4:17</span></li>
+        <li><span>12</span>Another Brick In The Wall, Part 3<span>1:15</span></li>
+        <li><span>13</span>Goodbye Cruel World<span>1:17</span></li>
+        <li><span>14</span>Hey You<span>4:42</span></li>
+        <li><span>15</span>Is There Anybody Out There<span>2:41</span></li>
+        <li><span>16</span>Nobody Home<span>3:25</span></li>
+        <li><span>17</span>Vera<span>1:34</span></li>
+        <li><span>18</span>Bring The Boys Back Home<span>1:27</span></li>
+        <li><span>19</span>Comfortably Numb<span>6:24</span></li>
+        <li><span>20</span>The Show Must Go On<span>1:36</span></li>
+        <li><span>21</span>In The Flesh<span>4:18</span></li>
+        <li><span>22</span>Run Like Hell<span>4:25</span></li>
+        <li><span>23</span>Waiting For The Worms<span>3:58</span></li>
+        <li><span>24</span>Stop<span>0:30</span></li>
+        <li><span>25</span>The Trial<span>5:20</span></li>
+        <li><span>26</span>Outside The Wall<span>1:44</span></li>
+      </ol>
+    </article>
+    <article id="album-27">
+      <hgroup>
+        <h3><span class="number">27</span><span><b>Radiohead</b>&nbsp;– <cite>OK Computer</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>12 tracks · 53:27</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Airbag<span>4:44</span></li>
+        <li><span>2</span>Paranoid Android<span>6:23</span></li>
+        <li><span>3</span>Subterranean Homesick Alien<span>4:28</span></li>
+        <li><span>4</span>Exit Music (for a Film)<span>4:25</span></li>
+        <li><span>5</span>Let Down<span>4:59</span></li>
+        <li><span>6</span>Karma Police<span>4:22</span></li>
+        <li><span>7</span>Fitter Happier<span>1:57</span></li>
+        <li><span>8</span>Electioneering<span>3:51</span></li>
+        <li><span>9</span>Climbing Up the Walls<span>4:45</span></li>
+        <li><span>10</span>No Surprises<span>3:49</span></li>
+        <li><span>11</span>Lucky<span>4:20</span></li>
+        <li><span>12</span>The Tourist<span>5:25</span></li>
+      </ol>
+    </article>
+    <article id="album-28">
+      <hgroup>
+        <h3><span class="number">28</span><span><b>Radiohead</b>&nbsp;– <cite>The Bends</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>12 tracks · 48:39</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Planet Telex<span>4:18</span></li>
+        <li><span>2</span>The Bends<span>4:06</span></li>
+        <li><span>3</span>High and Dry<span>4:18</span></li>
+        <li><span>4</span>Fake Plastic Trees<span>4:51</span></li>
+        <li><span>5</span>Bones<span>3:09</span></li>
+        <li><span>6</span>(Nice Dream)<span>3:53</span></li>
+        <li><span>7</span>Just<span>3:54</span></li>
+        <li><span>8</span>My Iron Lung<span>4:36</span></li>
+        <li><span>9</span>Bullet Proof...I Wish I Was<span>3:29</span></li>
+        <li><span>10</span>Black Star<span>4:07</span></li>
+        <li><span>11</span>Sulk<span>3:43</span></li>
+        <li><span>12</span>Street Spirit (Fade Out)<span>4:15</span></li>
+      </ol>
+    </article>
+    <article id="album-29">
+      <hgroup>
+        <h3><span class="number">29</span><span><b>The Rentals</b>&nbsp;– <cite>Return of The Rentals</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>10 tracks · 37:00</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>The Love I’m Searching For<span>3:36</span></li>
+        <li><span>2</span>Waiting<span>3:13</span></li>
+        <li><span>3</span>Friends of P<span>3:32</span></li>
+        <li><span>4</span>Move On<span>4:21</span></li>
+        <li><span>5</span>Please Let That Be You<span>3:34</span></li>
+        <li><span>6</span>My Summer Girl<span>3:13</span></li>
+        <li><span>7</span>Brilliant Boy<span>4:16</span></li>
+        <li><span>8</span>Naive<span>2:20</span></li>
+        <li><span>9</span>These Days<span>3:00</span></li>
+        <li><span>10</span>Sweetness and Tenderness<span>5:55</span></li>
+      </ol>
+    </article>
+    <article id="album-30">
+      <hgroup>
+        <h3><span class="number">30</span><span><b>Rolling Stones</b>&nbsp;– <cite>Exile On Main St</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>18 tracks · 1:07:16</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Rocks Off<span>4:33</span></li>
+        <li><span>2</span>Rip This Joint<span>2:23</span></li>
+        <li><span>3</span>Shake Your Hips<span>3:00</span></li>
+        <li><span>4</span>Casino Boogie<span>3:34</span></li>
+        <li><span>5</span>Tumbling Dice<span>3:48</span></li>
+        <li><span>6</span>Sweet Virginia<span>4:26</span></li>
+        <li><span>7</span>Torn And Frayed<span>4:18</span></li>
+        <li><span>8</span>Sweet Black Angel<span>2:58</span></li>
+        <li><span>9</span>Loving Cup<span>4:26</span></li>
+        <li><span>10</span>Happy<span>3:05</span></li>
+        <li><span>11</span>Turd On The Run<span>2:38</span></li>
+        <li><span>12</span>Ventilator Blues<span>3:24</span></li>
+        <li><span>13</span>I Just Want To See His Face<span>2:54</span></li>
+        <li><span>14</span>Let It Loose<span>5:19</span></li>
+        <li><span>15</span>All Down The Line<span>3:50</span></li>
+        <li><span>16</span>Stop Breaking Down<span>4:34</span></li>
+        <li><span>17</span>Shine A Light<span>4:17</span></li>
+        <li><span>18</span>Soul Survivor<span>3:49</span></li>
+      </ol>
+    </article>
+    <article id="album-31">
+      <hgroup>
+        <h3><span class="number">31</span><span><b>Smashing Pumpkins</b>&nbsp;– <cite>Mellon Collie and the Infinite Sadness</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>28 tracks · 2:01:59</p>
+      </hgroup>
+      <ol style="--number-width: 4ch">
+        <li><span>1.1</span>Mellon Collie And The Infinite Sadness<span>2:53</span></li>
+        <li><span>1.2</span>Tonight, Tonight<span>4:15</span></li>
+        <li><span>1.3</span>Jellybelly<span>3:02</span></li>
+        <li><span>1.4</span>Zero (Explicit)<span>2:40</span></li>
+        <li><span>1.5</span>Here Is No Why<span>3:45</span></li>
+        <li><span>1.6</span>Bullet With Butterfly Wings<span>4:18</span></li>
+        <li><span>1.7</span>To Forgive<span>4:17</span></li>
+        <li><span>1.8</span>An Ode To No One<span>4:52</span></li>
+        <li><span>1.9</span>Love<span>4:23</span></li>
+        <li><span>1.10</span>Cupid de Locke<span>2:50</span></li>
+        <li><span>1.11</span>Galapogos<span>4:46</span></li>
+        <li><span>1.12</span>Muzzle<span>3:44</span></li>
+        <li><span>1.13</span>Porcelina of the Vast Oceans<span>9:22</span></li>
+        <li><span>1.14</span>Take Me Down<span>2:54</span></li>
+        <li><span>2.1</span>Where Boys Fear to Tread<span>4:24</span></li>
+        <li><span>2.2</span>Bodies<span>4:12</span></li>
+        <li><span>2.3</span>Thirty-Three<span>4:10</span></li>
+        <li><span>2.4</span>In The Arms Of Sleep<span>4:13</span></li>
+        <li><span>2.5</span>1979<span>4:26</span></li>
+        <li><span>2.6</span>Tales Of A Scorched Earth(Explicit)<span>3:46</span></li>
+        <li><span>2.7</span>Thru The Eyes Of Ruby<span>7:38</span></li>
+        <li><span>2.8</span>Stumbleine<span>2:54</span></li>
+        <li><span>2.9</span>X.Y.U<span>7:07</span></li>
+        <li><span>2.10</span>We Only Come Out at Night<span>4:05</span></li>
+        <li><span>2.11</span>Beautiful<span>4:18</span></li>
+        <li><span>2.12</span>Lily (My One and Only)<span>3:32</span></li>
+        <li><span>2.13</span>By Starlight<span>4:48</span></li>
+        <li><span>2.14</span>Farewell and Goodnight<span>4:24</span></li>
+      </ol>
+    </article>
+    <article id="album-32">
+      <hgroup>
+        <h3><span class="number">32</span><span><b>Snoop Dogg</b>&nbsp;– <cite>Doggystyle</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>18 tracks · 52:32</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Bathtub<span>1:50</span></li>
+        <li><span>2</span>G Funk Intro<span>2:25</span></li>
+        <li><span>3</span>Gin and Juice<span>3:31</span></li>
+        <li><span>4</span>W Balls<span>0:37</span></li>
+        <li><span>5</span>Tha Shiznit<span>4:04</span></li>
+        <li><span>6</span>Domino Intro<span>0:37</span></li>
+        <li><span>7</span>Lodi Dodi<span>4:24</span></li>
+        <li><span>8</span>Murder Was the Case<span>3:38</span></li>
+        <li><span>9</span>Serial Killa<span>3:35</span></li>
+        <li><span>10</span>Who Am I (What’s My Name)<span>4:06</span></li>
+        <li><span>11</span>For All My Niggaz &amp; Bitches<span>4:43</span></li>
+        <li><span>12</span>Ain’t No Fun (If the Homies Can’t Have None)<span>4:07</span></li>
+        <li><span>13</span>Chronic Relief Intro<span>0:34</span></li>
+        <li><span>14</span>Doggy Dogg World<span>5:05</span></li>
+        <li><span>15</span>Class Room Intro<span>0:44</span></li>
+        <li><span>16</span>Gz and Hustlas<span>3:52</span></li>
+        <li><span>17</span>Checkin<span>0:56</span></li>
+        <li><span>18</span>Pump Pump<span>3:44</span></li>
+      </ol>
+    </article>
+    <article id="album-33">
+      <hgroup>
+        <h3><span class="number">33</span><span><b>A Tribe Called Quest</b>&nbsp;– <cite>People's Instinctive Travels and the Paths of Rhythm</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>14 tracks · 1:04:40</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Push It Along<span>7:42</span></li>
+        <li><span>2</span>Luck Of Lucien<span>4:35</span></li>
+        <li><span>3</span>After Hours<span>4:39</span></li>
+        <li><span>4</span>Footprints<span>4:03</span></li>
+        <li><span>5</span>I Left My Wallet In El Segundo<span>4:09</span></li>
+        <li><span>6</span>Pubic Enemy<span>3:49</span></li>
+        <li><span>7</span>Bonita Applebum<span>3:49</span></li>
+        <li><span>8</span>Can I Kick It<span>4:13</span></li>
+        <li><span>9</span>Youthful Expression<span>4:56</span></li>
+        <li><span>10</span>Rhythm (Devoted To The Art Of Moving Butts)<span>4:02</span></li>
+        <li><span>11</span>Mr. Muhammad<span>3:35</span></li>
+        <li><span>12</span>Ham 'N' Eggs<span>5:30</span></li>
+        <li><span>13</span>Go Ahead In The Rain<span>3:58</span></li>
+        <li><span>14</span>Description Of A Fool<span>5:41</span></li>
+      </ol>
+    </article>
+    <article id="album-34">
+      <hgroup>
+        <h3><span class="number">34</span><span><b>A Tribe Called Quest</b>&nbsp;– <cite>The Low End Theory</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>14 tracks · 48:06</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Excursions<span>3:54</span></li>
+        <li><span>2</span>Buggin’ Out<span>3:38</span></li>
+        <li><span>3</span>Rap Promoter<span>2:13</span></li>
+        <li><span>4</span>Butter<span>3:39</span></li>
+        <li><span>5</span>Verses From the Abstract<span>3:59</span></li>
+        <li><span>6</span>Show Business<span>3:53</span></li>
+        <li><span>7</span>Vibes and Stuff<span>4:19</span></li>
+        <li><span>8</span>The Infamous Date Rape<span>2:54</span></li>
+        <li><span>9</span>Check the Rhime<span>3:37</span></li>
+        <li><span>10</span>Everything Is Fair<span>2:58</span></li>
+        <li><span>11</span>Jazz (We’ve Got)<span>4:10</span></li>
+        <li><span>12</span>Skypager<span>2:13</span></li>
+        <li><span>13</span>What<span>2:29</span></li>
+        <li><span>14</span>Scenario<span>4:11</span></li>
+      </ol>
+    </article>
+    <article id="album-35">
+      <hgroup>
+        <h3><span class="number">35</span><span><b>The Velvet Underground &amp; Nico</b>&nbsp;– <cite>The Banana Album</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>11 tracks · 49:01</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Sunday Morning<span>2:57</span></li>
+        <li><span>2</span>I’m Waiting for the Man<span>4:40</span></li>
+        <li><span>3</span>Femme Fatale<span>2:39</span></li>
+        <li><span>4</span>Venus in Furs<span>5:11</span></li>
+        <li><span>5</span>Run Run Run<span>4:22</span></li>
+        <li><span>6</span>All Tomorrow’s Parties<span>5:59</span></li>
+        <li><span>7</span>Heroin<span>7:13</span></li>
+        <li><span>8</span>There She Goes Again<span>2:41</span></li>
+        <li><span>9</span>I’ll Be Your Mirror (mono)<span>2:14</span></li>
+        <li><span>10</span>The Black Angel’s Death Song<span>3:14</span></li>
+        <li><span>11</span>European Son<span>7:50</span></li>
+      </ol>
+    </article>
+    <article id="album-36">
+      <hgroup>
+        <h3><span class="number">36</span><span><b>Weezer</b>&nbsp;– <cite>Blue Album</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>10 tracks · 41:22</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>My Name Is Jonas<span>3:24</span></li>
+        <li><span>2</span>No One Else<span>3:05</span></li>
+        <li><span>3</span>The World Has Turned And Left Me Here<span>4:18</span></li>
+        <li><span>4</span>Buddy Holly<span>2:39</span></li>
+        <li><span>5</span>Undone - The Sweater Song<span>5:05</span></li>
+        <li><span>6</span>Surf Wax America<span>3:06</span></li>
+        <li><span>7</span>Say It Ain't So<span>4:19</span></li>
+        <li><span>8</span>In The Garage<span>3:56</span></li>
+        <li><span>9</span>Holiday<span>3:25</span></li>
+        <li><span>10</span>Only In Dreams<span>8:04</span></li>
+      </ol>
+    </article>
+    <article id="album-37">
+      <hgroup>
+        <h3><span class="number">37</span><span><b>Wu-Tang Clan</b>&nbsp;– <cite>Enter the Wu-Tang (36 Chambers)</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>15 tracks · 1:10:55</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Bring da Ruckus<span>4:11</span></li>
+        <li><span>2</span>Shame on a Nigga<span>2:57</span></li>
+        <li><span>3</span>Clan in da Front<span>4:33</span></li>
+        <li><span>4</span>Wu‐Tang - 7th Chamber<span>6:05</span></li>
+        <li><span>5</span>Can It Be All So Simple + Intermission<span>6:55</span></li>
+        <li><span>6</span>Da Mystery of Chessboxin’<span>4:47</span></li>
+        <li><span>7</span>Wu‐Tang Clan Ain’t Nuthing ta F’ Wit<span>3:36</span></li>
+        <li><span>8</span>C.R.E.A.M<span>4:12</span></li>
+        <li><span>9</span>Method Man<span>5:51</span></li>
+        <li><span>10</span>Protect Ya Neck<span>4:51</span></li>
+        <li><span>11</span>Tearz<span>4:18</span></li>
+        <li><span>12</span>Wu‐Tang - 7th Chamber, Part II + Conclusion<span>6:10</span></li>
+        <li><span>13</span>Protect Ya Neck (Shao Lin version)<span>4:39</span></li>
+        <li><span>14</span>Method Man (Home Grown version)<span>5:10</span></li>
+        <li><span>15</span>C.R.E.A.M. (a cappella)<span>2:38</span></li>
+      </ol>
+    </article>
+    <article id="album-38">
+      <hgroup>
+        <h3><span class="number">38</span><span><b>Sam Harris</b>&nbsp;– <cite>Waking Up</cite></span><a href="#top" aria-label="Back to the album list">↑</a></h3>
+        <p>28 tracks · 5:12:35</p>
+      </hgroup>
+      <ol style="--number-width: 2ch">
+        <li><span>1</span>Day One<span>8:38</span></li>
+        <li><span>2</span>Day Two<span>10:45</span></li>
+        <li><span>3</span>Day Three<span>10:32</span></li>
+        <li><span>4</span>Day Four<span>10:23</span></li>
+        <li><span>5</span>Day Five<span>9:50</span></li>
+        <li><span>6</span>Day Six<span>10:17</span></li>
+        <li><span>7</span>Day Seven<span>10:01</span></li>
+        <li><span>8</span>Day Eight<span>9:59</span></li>
+        <li><span>9</span>Day Nine<span>10:06</span></li>
+        <li><span>10</span>Day Ten<span>12:15</span></li>
+        <li><span>11</span>Day Eleven<span>12:46</span></li>
+        <li><span>12</span>Day Twelve<span>15:33</span></li>
+        <li><span>13</span>Day Thirteen<span>10:58</span></li>
+        <li><span>14</span>Day Fourteen<span>11:17</span></li>
+        <li><span>15</span>Day Fifteen<span>11:08</span></li>
+        <li><span>16</span>Day Sixteen<span>10:32</span></li>
+        <li><span>17</span>Day Seventeen<span>13:46</span></li>
+        <li><span>18</span>Day Eighteen<span>11:10</span></li>
+        <li><span>19</span>Day Nineteen<span>13:55</span></li>
+        <li><span>20</span>Day Twenty<span>12:09</span></li>
+        <li><span>21</span>Day Twenty One<span>10:24</span></li>
+        <li><span>22</span>Day Twenty Two<span>10:31</span></li>
+        <li><span>23</span>Day Twenty Three<span>12:03</span></li>
+        <li><span>24</span>Day Twenty Four<span>10:03</span></li>
+        <li><span>25</span>Day Twenty Five<span>10:35</span></li>
+        <li><span>26</span>Day Twenty Six<span>10:01</span></li>
+        <li><span>27</span>Day Twenty Seven<span>10:34</span></li>
+        <li><span>28</span>Day Twenty Eight<span>12:22</span></li>
+      </ol>
+    </article>
+  </section>
 </main>
 </body>
 </html>
