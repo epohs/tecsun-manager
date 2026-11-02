@@ -105,9 +105,9 @@ While a card is still mounted, the menu shows a yellow **Clean and eject** item 
 `--add` · Copies new albums from a folder onto the card, each at the place its number says, and renumbers the albums after it.
 
 - Put just the new albums in a folder, numbered where they go, like `05 - Artist - Album`.
+- Unless the card is empty, **Add how?** comes first. **Add albums** keeps what's on the card. **Replace everything** erases the card, then copies the folder's albums under their own names. It asks you to type the card's name, warns if the card would end up with fewer albums, and keeps the card's format.
 - If an album on the card already has that number, it asks where the new one goes.
 - A track already on the card with the same name and size is skipped. One whose size changed is replaced.
-- **Add how?** offers **Add albums**, or **Replace everything**, which erases the card and copies the folder's albums under their own names. **Replace everything** asks you to type the card's name, warns if the card would end up with fewer albums, and keeps the card's format.
 - On a FAT32 card, it asks for your password before copying, so each track can land in one piece. See [Tracks stored in pieces](#tracks-stored-in-pieces).
 - **Add albums** matches albums by title, so if two albums share a title, in the folder or on the card, it stops and names them.
 - Afterwards it offers a backup, then cleans, sorts and ejects the card.
@@ -120,9 +120,9 @@ While a card is still mounted, the menu shows a yellow **Clean and eject** item 
 - **Rename an album** changes its name. The number stays.
 - **Delete an album** removes it from the card. The rest renumber. First it says when the card was last backed up and offers a fresh backup.
 - **Fix numbering** shows up when the numbers have gaps, repeats or uneven zero-padding, or an album has no number. It renumbers without changing the order.
-- **Apply and clean** makes all your changes, offers a backup unless you deleted albums, then cleans, sorts and ejects.
+- When you're done, **Apply and clean** makes all your changes, offers a backup unless you deleted albums, then cleans, sorts and ejects. Nothing on the card changes until you pick it.
 
-Nothing changes until you apply. **Cancel** asks before it throws your changes away.
+**Cancel** asks before it throws your changes away.
 
 ### Clean the card
 
@@ -223,7 +223,7 @@ The menu's Settings has two settings, both on by default.
 
 ### Debug logging
 
-Each run writes a log of what it showed, what it asked and your answers, every command it ran, and every change to the card. When a run stops or crashes, its last lines name the log. Your password never ends up in it.
+Each run writes a log of what it showed, what it asked, what you answered, every command it ran, and every change to the card. When a run stops or crashes, its last lines name the log. Your password never ends up in it.
 
 - Each run writes its own log file. When the script starts, it deletes the oldest log files, a whole run at a time, so that all the logs together stay around 5 MB.
 - If one run's log grows past 1 MB, as when checking thousands of tracks, it stops noting each file one by one. It still notes everything else: what the script showed, what you answered, and what changed.
