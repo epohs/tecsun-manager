@@ -4665,7 +4665,7 @@ def play_time(path: Path) -> float | None:
 
     try:
         audio = mutagen.File(path)
-    except Exception as error:  # a malformed file can trip more than MutagenError, and a time isn't worth a stop
+    except Exception as error:  # noqa: BLE001 - a malformed file can trip more than MutagenError, and a time isn't worth a stop
         LOG.info("No play time for %s: %s", path, error)
         return None
     # An untagged file reads as false (mutagen's result is a dict of its tags), so it's checked against None
