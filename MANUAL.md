@@ -134,16 +134,19 @@ While a card is still mounted, the menu shows a yellow **Clean and eject** item 
 
 #### Tracks stored in pieces
 
-The radio skips a track whose data is scattered across the card, even though the file itself is fine. macOS fills the lowest free gaps on a card first, and deleted albums and cleaned-away `._` files leave lots of small gaps, so a big track copied later can land in many pieces.
+The radio skips a track that's stored in pieces scattered across the card, even though the file plays fine on a computer.
 
-Every card task looks for these before it sorts. On a FAT32 card, with your password, it offers to rewrite each one, as long as fatsort can sort the card afterwards. A rewrite copies the track to an unbroken spot, reads the copy back, checks that it matches and is in one piece, and only then swaps it in.
+These split tracks come from gaps. Deleting albums, and cleaning away the hidden files macOS adds, leaves small empty spaces all over the card. macOS fills the earliest spaces first, so a big track copied later can be split across many of them.
 
-Asking macOS for an unbroken spot doesn't work on its FAT driver. So the script briefly fills the small gaps with a hidden throwaway file (`.~soak`), writes the track past them, then deletes the throwaway. Add does the same before it copies.
+Before any task sorts the card, the script checks for split tracks. On a FAT32 card, with your admin password, it offers to rewrite each in one piece. It copies the track into an unbroken stretch of free space, checks that the copy matches the original and is whole, and only then swaps it in. Names and play order don't change. To keep the copy out of the small gaps, the script fills them with a placeholder file first, and deletes it once the copy is done. On a FAT32 card, Add does the same when it copies new tracks, so they start out whole.
 
-- Finding every one means reading the card's file table directly, which takes your admin password. This only works on FAT32 cards.
-- Without the password, or on exFAT, a quick check names the ones it can prove, but those can't be rewritten: rebuild the card instead (see below). Check says when the quick check can't rule out the rest.
-- When no gap is big enough for a track, it says so. To rebuild the card with every track in one piece: back up the card, restore the backup, then **Add → Replace everything** from the restored folder.
+- Finding every split track means reading the card's file table, its record of where each piece of every file sits. That takes your password and only works on FAT32 cards.
+- Without the password, or on an exFAT card, a quick check finds only some split tracks, and they can't be rewritten. Check says when the quick check might have missed some.
+- Rewriting needs fatsort, which puts each rewritten track back in its place in the play order.
+- When no stretch of free space is big enough for a track, the script says so.
 - Linux can't check for this.
+
+When a split track can't be rewritten, rebuild the card: back up the card, restore the backup, then use **Add → Replace everything** from the restored folder. Copying onto an erased card lays every track down in one piece.
 
 ### Back up
 
