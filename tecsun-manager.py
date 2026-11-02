@@ -2,6 +2,7 @@
 # /// script
 # requires-python = ">=3.14"
 # dependencies = [
+#     "mutagen==1.48.1",         # the web playlist's play times; imported when it's made
 #     "pillow==12.3.0",          # the playlist EPUB's cover (reportlab needs it too); imported when it's made
 #     "prompt-toolkit==3.0.53",  # imported directly, and its internals are relied on: see setup_question
 #     "questionary==2.1.1",
@@ -4634,8 +4635,8 @@ def task_stats(tools: Tools, state: dict):
 
 # ── Task: generate playlist ───────────────────────────────────────────────────
 # The card's albums as a list to keep: an EPUB for the XTEINK X4, a PDF to print and fold into the radio's case,
-# and a web page, written beside the script. Read from folder and file names only, so it's quick and changes
-# nothing on the card.
+# and a web page, written beside the script. Read from folder and file names, and each track's header for its
+# play time, so it's quick and changes nothing on the card.
 
 PLAYLIST_TITLE = "Tecsun Playlist"
 PLAYLIST_NAME = "tecsun-playlist"   # the files' name unless another is typed: .epub, .pdf and .html
@@ -4643,35 +4644,57 @@ PLAYLIST_KINDS = (".epub", ".pdf", ".html")
 
 
 @dataclass(frozen=True)
+class Track:
+    number: str                    # "7", or with a disc, "2.12"
+    title: str
+    seconds: float | None = None   # its play time; None when its header can't be read
+
+
+@dataclass(frozen=True)
 class Listed:
     number: str   # as the folder writes it, "07"; "" without one
     artist: str   # "" when the title has no " - "
     album: str
-    tracks: tuple[tuple[str, str], ...] = ()   # (number, title) in play order: the EPUB's album chapters
+    tracks: tuple[Track, ...] = ()   # in play order: the EPUB's album chapters, the web page's track lists
 
 
-def album_tracks(folder: Path) -> tuple[tuple[str, str], ...]:
+def play_time(path: Path) -> float | None:
+    """A track's play time in seconds, from its header, or None. Most MP3s record their length there; for one
+    that doesn't, mutagen estimates it from the first frame's bitrate."""
+    import mutagen
+
+    try:
+        audio = mutagen.File(path)
+    except Exception as error:  # a malformed file can trip more than MutagenError, and a time isn't worth a stop
+        LOG.info("No play time for %s: %s", path, error)
+        return None
+    # An untagged file reads as false (mutagen's result is a dict of its tags), so it's checked against None
+    return (audio.info.length or None) if audio is not None else None
+
+
+def album_tracks(folder: Path) -> tuple[Track, ...]:
     """An album's tracks in the order the radio plays them (a subfolder's before the album's own), each split
     from "07 - Title.flac" or "1-07 Title.mp3" at its number. A name without one is numbered by its place."""
     tree = visible_tree(folder)
 
     def played(here: str) -> list[str]:
-        names = []
+        paths = []
         for entry in tree.get(here, []):
             path = os.path.join(here, entry) if here else entry
-            names += played(path) if path in tree else [entry] if is_audio(Path(entry)) else []
-        return names
+            paths += played(path) if path in tree else [path] if is_audio(Path(entry)) else []
+        return paths
 
     tracks = []
-    for place, name in enumerate(played(""), 1):
-        stem = nfc(Path(name).stem).strip()
+    for place, path in enumerate(played(""), 1):
+        stem = nfc(Path(path).stem).strip()
+        seconds = play_time(folder / path)
         # "07 - Title", "07. Title", "07 Title", or with a disc, "2-07 Title" or "02.07 - Title" (shown as 2.7).
         # A year starting a title is no track number.
         match = re.match(r"(?:(\d{1,2})[-.])?0*(\d{1,3})(?:\s*[-.]\s*|\s+)(.+)", stem)
         if match:
-            tracks.append((f"{int(match[1])}.{match[2]}" if match[1] else match[2], match[3]))
+            tracks.append(Track(f"{int(match[1])}.{match[2]}" if match[1] else match[2], match[3], seconds))
         else:
-            tracks.append((str(place), stem))
+            tracks.append(Track(str(place), stem, seconds))
     return tuple(tracks)
 
 
@@ -4728,7 +4751,8 @@ def x4_tracks(item: Listed) -> str:
     breaks only after a dot or inside a title."""
     if not item.tracks:
         return ""
-    run = f"{QUARTER_SPACE}· ".join(f"<b>{number}</b>{QUARTER_SPACE}{xml_text(title)}" for number, title in item.tracks)
+    run = f"{QUARTER_SPACE}· ".join(f"<b>{track.number}</b>{QUARTER_SPACE}{xml_text(track.title)}"
+                                    for track in item.tracks)
     return f'<p class="tracks">{run}</p>\n'
 
 
@@ -5013,13 +5037,17 @@ def playlist_pdf(listed: list[Listed], when: datetime) -> tuple[bytes, int]:
 
 
 # The web page: the printed card's look, in newspaper columns. As many 17rem columns as fit, up to four, and two
-# at most in portrait; light or dark with the system. One file with nothing to load, so it opens anywhere.
+# at most in portrait; light or dark with the system. The list fills at least the first screen, then each album's
+# tracks follow in the same columns, and each album in the list links to its own. One file with nothing to load,
+# so it opens anywhere.
 PLAYLIST_PAGE_STYLE = """
 :root {
   color-scheme: light dark;
   --paper: light-dark(#ffffff, #141414);
   --ink: light-dark(#141414, #ececec);
   --muted: light-dark(#6b6b6b, #9b9b9b);
+  --rule: light-dark(#d6d6d6, #353535);
+  --tint: light-dark(#f0f0f0, #232323);
   --box: light-dark(#141414, #ececec);
   --box-ink: light-dark(#ffffff, #141414);
   --gutter: clamp(1rem, 4vw, 3rem);
@@ -5041,24 +5069,22 @@ body {
 main { max-width: 76rem; margin-inline: auto; }
 @media (orientation: landscape) { main { max-width: 90rem; } }
 
+/* The header and the list fill at least the first screen, with the browser's bars showing, so the tracks start
+   below it. A longer list just runs on. */
+.page-one { min-height: calc(100svh - max(1.5rem, env(safe-area-inset-top))); }
+
 header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25em 1em; margin-block-end: 1.25em; }
 h1 { margin: 0; font-size: 1.6em; line-height: 1.1; letter-spacing: -0.01em; }
 header p { margin: 0; color: var(--muted); font-size: 0.85em; }
 
-ol { margin: 0; padding: 0; list-style: none; columns: 17rem 4; column-gap: 2.5rem; }
-@media (orientation: portrait) { ol { columns: 18rem 2; } }
+.albums, .tracks { columns: 17rem 4; column-gap: 2.5rem; }
+@media (orientation: portrait) { .albums, .tracks { columns: 18rem 2; } }
 
-/* The number box, then the title; a long title wraps under itself, not under the number */
-li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 0.45em;
-  align-items: first baseline;
-  padding-block-end: 0.55em;
-  break-inside: avoid;
-  text-wrap: pretty;
-}
+a { color: inherit; text-decoration: none; }
+cite { font-style: normal; }
+
 .number {
+  justify-self: start;
   background: var(--box);
   color: var(--box-ink);
   font-size: 0.92em;
@@ -5068,27 +5094,113 @@ li {
   border-radius: 0.12em;
 }
 .blank { visibility: hidden; }
-.artist { font-weight: 700; }
+
+/* The list. Each album is one link to its tracks: the number box, then the title, which wraps under itself and
+   not under the number. Only the album's name underlines. */
+.albums { margin: 0; padding: 0; list-style: none; }
+.albums li { padding-block-end: 0.55em; break-inside: avoid; text-wrap: pretty; }
+.albums a {
+  display: inline-grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.45em;
+  align-items: first baseline;
+  vertical-align: top;
+}
+.albums a:hover cite, .albums a:focus-visible cite {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+.albums a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 0.15em; }
+
+/* The tracks: a rule and a heading, then each album. Its tracks' numbers line up under its number box, their
+   titles under the artist, and their times at the right, under the link back up. */
+.tracks { margin-block-start: 2.5em; border-block-start: 1px solid var(--rule); padding-block-start: 1.25em; }
+h2 { column-span: all; margin: 0 0 1em; font-size: 1.15em; }
+.tracks article {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  column-gap: 0.45em;
+  position: relative;
+  padding-block-end: 1.6em;   /* padding, not margin: a margin can push the next column's first album down */
+  break-inside: avoid;
+  scroll-margin-block-start: 1.25rem;
+  text-wrap: pretty;
+}
+h3, .tracks ol, .tracks li {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: first baseline;
+}
+h3 { margin: 0 0 0.1em; font-size: 1em; font-weight: 400; }
+h3 > a { color: var(--muted); padding-inline: 0.2em; }
+h3 > a:hover, h3 > a:focus-visible { color: var(--ink); }
+.tracks article > p { grid-column: 2 / -1; margin: 0 0 0.35em; color: var(--muted); font-size: 0.82em; }
+.tracks ol { margin: 0; padding: 0; list-style: none; row-gap: 0.12em; font-size: 0.88em; }
+.tracks li > span { justify-self: end; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* The album the list jumped to, tinted */
+.tracks article:target::before {
+  content: "";
+  position: absolute;
+  inset: -0.5em -0.5em 1.1em;
+  z-index: -1;
+  background: var(--tint);
+  border-radius: 0.15em;
+}
 """
 
 
+def clock(seconds: float) -> str:
+    """A play time as a CD player shows it: "4:07", or past an hour, "1:02:07"."""
+    hours, rest = divmod(round(seconds), 3600)
+    return f"{hours}:{rest // 60:02d}:{rest % 60:02d}" if hours else f"{rest // 60}:{rest % 60:02d}"
+
+
+def web_album_line(item: Listed, digits: int) -> str:
+    """An album's number box and title, the same in the list and atop its tracks. A box without a number keeps
+    the titles in line. The no-break space keeps the dash with the artist, so no line starts with it."""
+    box = (f'<span class="number">{item.number}</span>' if item.number
+           else f'<span class="number blank" aria-hidden="true">{"0" * digits}</span>')
+    album = f"<cite>{xml_text(item.album)}</cite>"
+    return f"{box}<span><b>{xml_text(item.artist)}</b>&nbsp;– {album}</span>" if item.artist else box + album
+
+
+def web_tracks(item: Listed) -> str:
+    """The album's track count and total time, then each track as its number, its title and its time. A total
+    is left off when any track's time is missing."""
+    if not item.tracks:
+        return ""
+    times = [track.seconds for track in item.tracks]
+    total = f" · {clock(sum(times))}" if None not in times else ""
+    rows = "".join(f"        <li><span>{track.number}</span>{xml_text(track.title)}"
+                   + (f"<span>{clock(track.seconds)}</span>" if track.seconds is not None else "") + "</li>\n"
+                   for track in item.tracks)
+    return f"      <p>{plural(len(item.tracks), 'track')}{total}</p>\n      <ol>\n{rows}      </ol>\n"
+
+
 def playlist_html(listed: list[Listed], when: datetime) -> str:
-    """The list as one web page: each album's number in a box, then the artist in bold, the dash kept with it."""
+    """The list as one web page: each album's number in a box, then the artist in bold, linked to the album's
+    tracks further down."""
     digits = max((len(item.number) for item in listed), default=0)
-
-    def row(item: Listed) -> str:
-        box = (f'<span class="number">{item.number}</span>' if item.number
-               else f'<span class="number blank" aria-hidden="true">{"0" * digits}</span>')
-        artist = f'<span class="artist">{xml_text(item.artist)}</span>&nbsp;– ' if item.artist else ""
-        return f"    <li>{box}<span>{artist}{xml_text(item.album)}</span></li>\n"
-
+    width = max(2, len(str(len(listed))))
+    anchors = [f"album-{index:0{width}d}" for index in range(1, len(listed) + 1)]
+    rows = "".join(f'      <li><a href="#{anchor}">{web_album_line(item, digits)}</a></li>\n'
+                   for anchor, item in zip(anchors, listed))
+    albums = "".join(f'    <article id="{anchor}">\n'
+                     f'      <h3>{web_album_line(item, digits)}<a href="#top" aria-label="Back to the album list">↑</a>'
+                     f"</h3>\n{web_tracks(item)}    </article>\n" for anchor, item in zip(anchors, listed))
     return ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
             f'<meta name="color-scheme" content="light dark">\n<title>{PLAYLIST_TITLE}</title>\n'
             f"<style>{PLAYLIST_PAGE_STYLE}</style>\n</head>\n<body>\n<main>\n"
-            f"  <header>\n    <h1>{PLAYLIST_TITLE}</h1>\n"
-            f"    <p>{long_date(when)} · {plural(len(listed), 'album')}</p>\n  </header>\n"
-            f"  <ol>\n{''.join(row(item) for item in listed)}  </ol>\n</main>\n</body>\n</html>\n")
+            '  <div class="page-one">\n'
+            f"    <header>\n      <h1>{PLAYLIST_TITLE}</h1>\n"
+            f"      <p>{long_date(when)} · {plural(len(listed), 'album')}</p>\n    </header>\n"
+            f'    <ol class="albums">\n{rows}    </ol>\n  </div>\n'
+            f'  <section class="tracks">\n    <h2>Tracks</h2>\n{albums}  </section>\n'
+            "</main>\n</body>\n</html>\n")
 
 
 def playlist_files(name: str) -> tuple[Path, ...]:
@@ -5167,13 +5279,16 @@ def task_playlist(tools: Tools, state: dict):
     if chosen is None:
         return BACK
     card, contents = chosen
-    listed = playlist_albums(contents.albums, {name: album_tracks(card.mount / name) for name in contents.albums})
+    with busy("Reading the tracks"):
+        tracks = {name: album_tracks(card.mount / name) for name in contents.albums}
+    listed = playlist_albums(contents.albums, tracks)
     if not listed:
         warn("There are no albums on the card to list.")
         outro("Nothing was written.", good=False)
         return
     say(f"Lists {plural(len(listed), 'album')} in play order: each one's number, artist and album, from its "
-        "folder's name. The EPUB adds each album's tracks, from their file names.")
+        "folder's name. The EPUB and the web page add each album's tracks, from their file names, and the web "
+        "page their play times.")
     numbers = [int(item.number) for item in listed if item.number]
     if numbers != list(range(1, len(numbers) + 1)):
         warn("Some album numbers repeat or skip. Arrange › Fix numbering puts them in order.")
@@ -5311,7 +5426,8 @@ HELP_PAGES = {  # one per task, in menu order
         "Generate playlist", "",
         "The card's albums as a list to keep: each one's number, artist and album, from its folder's name. An EPUB "
         "to read on the XTEINK X4, with a cover of the first albums and a chapter of tracks for each album; a PDF "
-        "to print and fold into the radio's case; and a web page. Nothing on the card changes.",
+        "to print and fold into the radio's case; and a web page with each album's tracks and play times. "
+        "Nothing on the card changes.",
         (("Run directly", ((f"{PROG} --playlist", "pick the card as you go"),)),
          ("Good to know", ((f"The files go beside the script as {PLAYLIST_NAME}.epub, .pdf and .html, replacing "
                             "the last set. Another name… keeps the old set."),
@@ -5319,8 +5435,8 @@ HELP_PAGES = {  # one per task, in menu order
                             "same name, so give a newer list another name."),
                            ("Print the PDF at 100%, not fit to page. Cut the sheet down the middle, then fold a half "
                             "across its middle into a card. When the list fits one card, the other half is a spare."),
-                           ("Open the web page in any browser: up to four columns, two in a tall window, light or dark "
-                            "with the system."))))),
+                           ("Open the web page in any browser. The album list fills the first screen, and each album "
+                            "in it links to its tracks further down."))))),
 }
 
 def logs_note(state: dict) -> str:

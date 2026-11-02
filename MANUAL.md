@@ -213,10 +213,11 @@ Add and Arrange offer a backup when they finish, if they changed anything: an up
 |---|---|
 | `tecsun-playlist.epub` | An e-reader. Page one is the album list, then each album gets a chapter with its tracks. Its cover shows the first albums. Made for the XTEINK X4 |
 | `tecsun-playlist.pdf` | Printing. A card that folds up and lives in the radio's case |
-| `tecsun-playlist.html` | A browser. One file, light or dark with your system |
+| `tecsun-playlist.html` | A browser. The album list fills the first screen, and each album in it links to its tracks and play times further down. One file, light or dark with your system |
 
 - Each run replaces the last set. At **Save as**, **Another name…** writes a new set and keeps the old one.
 - **On the X4:** copy the EPUB onto its SD card. The X4 doesn't notice a book replaced under the same name, and keeps showing the old one's cover and chapters, so give a newer list another name.
+- **In a browser:** the play times come from each track's file. An MP3 that doesn't record its length gets an estimate. A track whose time can't be read shows none, and its album then shows no total.
 - **On paper:** print the PDF at 100% (not fit to page) on US Letter. Cut the sheet down the middle, then fold a half across its middle into a 5.5 × 4.25 in card. That's about 45 albums a card. When the list fits on one card, the other half is a spare.
 
 
